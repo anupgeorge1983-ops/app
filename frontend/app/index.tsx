@@ -4,27 +4,18 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
-  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import { theme } from "@/src/theme";
-import { api } from "@/src/api";
-import { getOrCreateUserId, isOnboarded } from "@/src/session";
+import { isOnboarded } from "@/src/session";
 
 export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState<{
-    total_resolved: number;
-    my_resolved: number;
-    my_in_progress: number;
-  } | null>(null);
 
   const load = useCallback(async () => {
     const done = await isOnboarded();
@@ -32,16 +23,7 @@ export default function Home() {
       router.replace("/onboarding");
       return;
     }
-    const uid = await getOrCreateUserId();
-    try {
-      const s = await api.getStats(uid);
-      setStats(s);
-    } catch (e) {
-      console.warn("stats failed", e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+    setLoading(false);
   }, [router]);
 
   useEffect(() => {
@@ -54,11 +36,6 @@ export default function Home() {
     }, [load]),
   );
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    load();
-  };
-
   const startNewCase = () => router.push("/case/new");
 
   if (loading) {
@@ -69,17 +46,9 @@ export default function Home() {
     );
   }
 
-  const totalResolved = stats?.total_resolved ?? 0;
-  const motivational =
-    totalResolved === 0
-      ? "Be the first couple to find their way back."
-      : totalResolved === 1
-        ? "1 couple has found their way back."
-        : `${totalResolved.toLocaleString()} couples have found their way back.`;
-
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      {/* Top bar */}
+      {/* Top bar — profile icon only */}
       <View style={styles.topBar}>
         <View style={{ width: 40 }} />
         <TouchableOpacity
@@ -92,23 +61,14 @@ export default function Home() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.colors.primary}
-          />
-        }
-      >
-        <Text style={styles.brand} testID="brand-title">Be Heard</Text>
-
-        <View style={{ marginTop: theme.spacing.lg }}>
-          <Text style={styles.hero}>A calm bridge{"\n"}back to each other.</Text>
-          <Text style={styles.heroSub}>
-            When the silence after an argument feels heavy — start here.
+      {/* Centered minimal content */}
+      <View style={styles.content}>
+        <View style={styles.heroBlock}>
+          <Text style={styles.brand} testID="brand-title">
+            Be Heard
+          </Text>
+          <Text style={styles.tagline} testID="tagline">
+            A calm bridge back to each other
           </Text>
         </View>
 
@@ -121,47 +81,7 @@ export default function Home() {
           <Text style={styles.startBtnText}>Start a case</Text>
           <Feather name="arrow-right" size={20} color="#fff" />
         </TouchableOpacity>
-
-        <Text testID="motivational-stats" style={styles.motivational}>
-          {motivational}
-        </Text>
-
-        <View style={styles.divider} />
-
-        <TouchableOpacity
-          testID="past-cases-button"
-          onPress={() => router.push("/cases")}
-          activeOpacity={0.85}
-          style={styles.linkRow}
-        >
-          <View style={styles.linkIcon}>
-            <Feather name="archive" size={18} color={theme.colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.linkTitle}>Past cases</Text>
-            <Text style={styles.linkSub}>
-              {stats?.my_resolved || 0} resolved · {stats?.my_in_progress || 0} in progress
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={20} color={theme.colors.textSubtle} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          testID="stats-button"
-          onPress={() => router.push("/stats")}
-          activeOpacity={0.85}
-          style={styles.linkRow}
-        >
-          <View style={styles.linkIcon}>
-            <Feather name="bar-chart-2" size={18} color={theme.colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.linkTitle}>Your stats</Text>
-            <Text style={styles.linkSub}>Personal and community totals</Text>
-          </View>
-          <Feather name="chevron-right" size={20} color={theme.colors.textSubtle} />
-        </TouchableOpacity>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -185,33 +105,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: theme.colors.surface,
   },
-  scroll: {
+  content: {
+    flex: 1,
     paddingHorizontal: theme.spacing.lg,
+    justifyContent: "center",
     paddingBottom: theme.spacing.xxl,
   },
+  heroBlock: {
+    alignItems: "flex-start",
+    marginBottom: theme.spacing.xxl,
+  },
   brand: {
-    fontSize: 56,
+    fontSize: 64,
     fontWeight: "800",
     color: theme.colors.textHeading,
-    letterSpacing: -1.5,
-    lineHeight: 60,
+    letterSpacing: -1.8,
+    lineHeight: 68,
+  },
+  tagline: {
     marginTop: theme.spacing.md,
-  },
-  hero: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: theme.colors.textBody,
-    letterSpacing: -0.3,
-    lineHeight: 32,
-  },
-  heroSub: {
-    fontSize: 15,
+    fontSize: 17,
     color: theme.colors.textSubtle,
-    marginTop: theme.spacing.sm,
-    lineHeight: 21,
+    lineHeight: 24,
   },
   startBtn: {
-    marginTop: theme.spacing.xl,
     backgroundColor: theme.colors.primary,
     borderRadius: theme.radius.button,
     paddingVertical: 18,
@@ -221,38 +138,4 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   startBtnText: { color: "#fff", fontSize: 17, fontWeight: "600" },
-  motivational: {
-    marginTop: theme.spacing.md,
-    fontSize: 13,
-    color: theme.colors.primary,
-    textAlign: "center",
-    fontWeight: "500",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: theme.colors.borderSoft,
-    marginVertical: theme.spacing.xl,
-  },
-  linkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    marginBottom: theme.spacing.sm,
-    gap: theme.spacing.md,
-  },
-  linkIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.colors.primaryTint,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  linkTitle: { fontSize: 15, fontWeight: "600", color: theme.colors.textHeading },
-  linkSub: { fontSize: 13, color: theme.colors.textSubtle, marginTop: 2 },
 });

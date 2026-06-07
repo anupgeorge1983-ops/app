@@ -215,5 +215,5 @@ agent_communication:
       message: "Just finished implementing 4 frontend deliverables + 2 backend endpoints (stats + transcribe). Expo was restarted after expo-audio install."
     - agent: "testing"
       message: "BACKEND PASS — 9/9 pytest. /api/transcribe validated with real spoken WAV; /api/stats correct; full case flow regression resolved with both verdicts. Minor (non-blocking): cases POST returns 200 instead of 201; transcribe 500 leaks raw error string."
-    - agent: "testing"
-      message: "FRONTEND PASS — All UI testIDs present and navigation works. Home shows 56pt brand title + motivational stat, no inline cases list. /cases empty state OK, /stats hero card + 6 tiles OK. MicButton renders on case/new and case/[id] inputs; web preview correctly shows degraded message. Only non-blocking finding: react-native-web internal 'pointerEvents' deprecation warning. Voice capture still needs device build (expo-audio doesn't work on web)."
+    - agent: "main"
+      message: "Home simplified per user: only Be Heard title (64pt), grey tagline 'A calm bridge back to each other', and Start a case button. Past Cases card + Your stats card removed from Home and relocated into Profile screen (behind the top-right profile icon). Visually verified via screenshot on web preview."

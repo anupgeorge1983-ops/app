@@ -68,6 +68,41 @@ export default function ProfileScreen() {
             </Text>
           </Text>
 
+          {/* Quick access — past cases & stats */}
+          <View style={styles.linksBlock}>
+            <TouchableOpacity
+              testID="profile-past-cases-button"
+              onPress={() => router.push("/cases")}
+              activeOpacity={0.85}
+              style={styles.linkRow}
+            >
+              <View style={styles.linkIcon}>
+                <Feather name="archive" size={18} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.linkTitle}>Past cases</Text>
+                <Text style={styles.linkSub}>Review your history</Text>
+              </View>
+              <Feather name="chevron-right" size={20} color={theme.colors.textSubtle} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              testID="profile-stats-button"
+              onPress={() => router.push("/stats")}
+              activeOpacity={0.85}
+              style={styles.linkRow}
+            >
+              <View style={styles.linkIcon}>
+                <Feather name="bar-chart-2" size={18} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.linkTitle}>Your stats</Text>
+                <Text style={styles.linkSub}>Personal and community totals</Text>
+              </View>
+              <Feather name="chevron-right" size={20} color={theme.colors.textSubtle} />
+            </TouchableOpacity>
+          </View>
+
           {profile?.answers && profile.answers.length > 0 && (
             <View style={{ marginTop: theme.spacing.xl }}>
               <Text style={styles.section}>YOUR CONFLICT STYLE</Text>
@@ -127,6 +162,31 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
   },
   partner: { fontSize: 14, color: theme.colors.textBody, textAlign: "center", marginTop: 4 },
+  linksBlock: {
+    marginTop: theme.spacing.xl,
+    gap: theme.spacing.sm,
+  },
+  linkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    gap: theme.spacing.md,
+  },
+  linkIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.primaryTint,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  linkTitle: { fontSize: 15, fontWeight: "600", color: theme.colors.textHeading },
+  linkSub: { fontSize: 13, color: theme.colors.textSubtle, marginTop: 2 },
   section: {
     fontSize: 11,
     letterSpacing: 1.5,
