@@ -1,0 +1,27 @@
+{
+  "summary": "Frontend testing (web preview, mobile viewport 375x667) for 'Be Heard' app redesign. All 6 requested flows pass: (1) Onboarding Quick start → names → 3 prompts → Done routes to Home. (2) Home shows large brand-title 'Be Heard' at 56px, start-case-button, motivational-stats reading '4 couples have found their way back.', past-cases/stats/profile buttons present, and NO inline case rows. (3) /cases shows back button + cases-empty (fresh session). (4) /stats shows hero-stat-card with value '4' plus all 6 stat tiles (stat-my-resolved, stat-my-in-progress, stat-my-total, stat-my-rate, stat-total-resolved, stat-total-cases). (5) Tapping start-case opens /case/new with mic-button visible — clicking it produces mic-error 'Voice recording isn't available on web — try the mobile app.' as expected fallback. Creating the case routes to /case/[id], which also renders mic-button with the same web fallback message. Screenshots captured for Home, /cases, /stats, /case/new, /case/[id]. No red-screen errors, no broken navigation. Only minor non-blocking console warning observed: react-native-web internal 'props.pointerEvents is deprecated' deprecation notice.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "react-native-web (props.pointerEvents)", "issue": "Console deprecation warning: 'props.pointerEvents is deprecated. Use style.pointerEvents'. This is an internal react-native-web warning likely emitted by the SafeAreaView / vector-icon shim and not from app code. Non-blocking but should be tracked when upgrading react-native-web."}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/screens/home.png", "/app/test_reports/screens/cases.png", "/app/test_reports/screens/stats.png", "/app/test_reports/screens/case_new.png", "/app/test_reports/screens/case_id_screen.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Home, Cases, Stats screens all have proper testIDs, StyleSheet usage, async load + RefreshControl, and Text wrapping — code is clean.",
+    "MicButton correctly short-circuits on Platform.OS === 'web' to show the friendly error message without attempting to use AudioModule, which is the intended UX.",
+    "Cases/Stats are well-separated; Home no longer renders inline list — matches requirements.",
+    "Suggest tracking react-native-web pointerEvents deprecation warning during the next dep bump (no fix required now)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (not retested)", "frontend": "100%"},
+  "seed_data_creation": "None. Backend already has 4 community-resolved cases from prior testing; user session was fresh so personal counts are 0.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Fresh AsyncStorage session lands on /onboarding. Use mode-quick-card + names + 3 question taps to reach Home. testIDs are consistent across Home/Cases/Stats/MicButton. MicButton on web ALWAYS shows the fallback error — this is expected and not a bug.",
+  "rca_of_issue": "N/A — no defects found in this iteration."
+}
