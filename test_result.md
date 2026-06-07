@@ -212,4 +212,8 @@ test_plan:
 
 agent_communication:
     - agent: "main"
-      message: "Just finished implementing 4 frontend deliverables + 2 backend endpoints (stats + transcribe). Expo was restarted after expo-audio install. Please run a backend suite first (transcribe with a real audio fixture, stats correctness, regression of cases flow), then a frontend pass for the Home/Stats/Cases UI. MicButton: web preview is expected to show 'Voice recording isn't available on web' — that's intentional, not a bug; only assert UI affordance is present. Use the demo_user_id from /app/memory/test_credentials.md if present, else create a fresh onboarding user."
+      message: "Just finished implementing 4 frontend deliverables + 2 backend endpoints (stats + transcribe). Expo was restarted after expo-audio install."
+    - agent: "testing"
+      message: "BACKEND PASS — 9/9 pytest. /api/transcribe validated with real spoken WAV; /api/stats correct; full case flow regression resolved with both verdicts. Minor (non-blocking): cases POST returns 200 instead of 201; transcribe 500 leaks raw error string."
+    - agent: "testing"
+      message: "FRONTEND PASS — All UI testIDs present and navigation works. Home shows 56pt brand title + motivational stat, no inline cases list. /cases empty state OK, /stats hero card + 6 tiles OK. MicButton renders on case/new and case/[id] inputs; web preview correctly shows degraded message. Only non-blocking finding: react-native-web internal 'pointerEvents' deprecation warning. Voice capture still needs device build (expo-audio doesn't work on web)."
