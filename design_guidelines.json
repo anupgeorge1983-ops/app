@@ -1,0 +1,157 @@
+{
+  "theme": "light",
+  "archetype": "Organic & Earthy / Minimal",
+  "colors": {
+    "primary": "#534AB7",
+    "primaryTint": "rgba(83, 74, 183, 0.15)",
+    "primaryBorder": "rgba(83, 74, 183, 0.3)",
+    "background": "#FFFFFF",
+    "surface": "#FFFFFF",
+    "textHeading": "#000000",
+    "textBody": "#4B5563",
+    "textSubtle": "#9CA3AF",
+    "success": "#10B981",
+    "successTint": "rgba(16, 185, 129, 0.15)",
+    "successText": "#047857",
+    "warning": "#F59E0B",
+    "warningTint": "rgba(245, 158, 11, 0.15)",
+    "warningText": "#B45309",
+    "border": "#E5E7EB",
+    "inputBg": "#F9FAFB"
+  },
+  "typography": {
+    "fontFamilyHeading": "Outfit, System",
+    "fontFamilyBody": "Manrope, System",
+    "h1": {
+      "fontSize": 32,
+      "fontWeight": "700",
+      "color": "#000000",
+      "letterSpacing": -0.5
+    },
+    "h2": {
+      "fontSize": 24,
+      "fontWeight": "600",
+      "color": "#000000"
+    },
+    "h3": {
+      "fontSize": 20,
+      "fontWeight": "600",
+      "color": "#000000"
+    },
+    "body": {
+      "fontSize": 16,
+      "fontWeight": "400",
+      "color": "#4B5563",
+      "lineHeight": 24
+    },
+    "subtext": {
+      "fontSize": 14,
+      "fontWeight": "400",
+      "color": "#9CA3AF"
+    },
+    "italic": {
+      "fontStyle": "italic"
+    }
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "xxl": 48
+  },
+  "borders": {
+    "radiusCard": 24,
+    "radiusButton": 24,
+    "radiusInput": 16,
+    "radiusPill": 999,
+    "widthDefault": 1,
+    "widthThick": 4
+  },
+  "shadows": {
+    "none": "none",
+    "subtle": "0px 2px 4px rgba(0, 0, 0, 0.05)"
+  },
+  "components": {
+    "ButtonPrimary": {
+      "backgroundColor": "#534AB7",
+      "borderRadius": 24,
+      "paddingVertical": 16,
+      "paddingHorizontal": 24,
+      "alignItems": "center",
+      "justifyContent": "center"
+    },
+    "ButtonPrimaryText": {
+      "color": "#FFFFFF",
+      "fontSize": 16,
+      "fontWeight": "600"
+    },
+    "CardDefault": {
+      "backgroundColor": "#FFFFFF",
+      "borderRadius": 24,
+      "borderWidth": 1,
+      "borderColor": "#E5E7EB",
+      "padding": 24
+    },
+    "CardMirror": {
+      "backgroundColor": "rgba(83, 74, 183, 0.15)",
+      "borderRadius": 24,
+      "borderWidth": 1,
+      "borderColor": "rgba(83, 74, 183, 0.3)",
+      "padding": 24
+    },
+    "CardPullQuote": {
+      "backgroundColor": "#FFFFFF",
+      "borderLeftWidth": 4,
+      "borderLeftColor": "#534AB7",
+      "paddingVertical": 16,
+      "paddingHorizontal": 20
+    },
+    "BadgeSuccess": {
+      "backgroundColor": "rgba(16, 185, 129, 0.15)",
+      "borderRadius": 999,
+      "paddingVertical": 6,
+      "paddingHorizontal": 12
+    },
+    "BadgeWarning": {
+      "backgroundColor": "rgba(245, 158, 11, 0.15)",
+      "borderRadius": 999,
+      "paddingVertical": 6,
+      "paddingHorizontal": 12
+    },
+    "InputDefault": {
+      "backgroundColor": "#F9FAFB",
+      "borderRadius": 16,
+      "borderWidth": 1,
+      "borderColor": "#E5E7EB",
+      "padding": 16,
+      "fontSize": 16,
+      "color": "#000000",
+      "minHeight": 120,
+      "textAlignVertical": "top"
+    }
+  },
+  "layouts": {
+    "container": {
+      "flex": 1,
+      "backgroundColor": "#FFFFFF",
+      "paddingHorizontal": 24,
+      "paddingTop": 48,
+      "paddingBottom": 24
+    }
+  },
+  "instructions_to_main_agent": [
+    "Build standard React Native Expo functional components in .js files.",
+    "Use StyleSheet.create for styling to apply the design guidelines provided above.",
+    "Follow the mobile-first (Android) requirement strictly using SafeAreaView where appropriate.",
+    "Ensure generous whitespace by using spacing.xl or spacing.xxl between main sections.",
+    "Implement the 'Start a Case' flow with clear step indicators (e.g., 3 progress dots).",
+    "For icons (mic, clock, profile, back arrow), use @expo/vector-icons like Feather or Ionicons.",
+    "No drop shadows should be used unless extremely subtle; rely primarily on borders and layout.",
+    "For the mirror confirmation screen, render AI text in italic within the CardMirror style.",
+    "Use ScrollView or KeyboardAvoidingView for screens containing text inputs.",
+    "The verdict screen should use BadgeSuccess or BadgeWarning depending on the outcome.",
+    "All interactive and key informational elements MUST include a data-testid attribute for robust automated testing."
+  ]
+}
