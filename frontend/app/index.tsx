@@ -11,17 +11,26 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import { theme } from "@/src/theme";
-import { isOnboarded } from "@/src/session";
+import { api } from "@/src/api";
+import { getOrCreateUserId, isOnboarded } from "@/src/session";
 
 export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [totalResolved, setTotalResolved] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     const done = await isOnboarded();
     if (!done) {
       router.replace("/onboarding");
       return;
+    }
+    const uid = await getOrCreateUserId();
+    try {
+      const s = await api.getStats(uid);
+      setTotalResolved(s.total_resolved);
+    } catch {
+      // silent fail — stats line just won't show
     }
     setLoading(false);
   }, [router]);
@@ -46,6 +55,15 @@ export default function Home() {
     );
   }
 
+  const motivational =
+    totalResolved === null
+      ? null
+      : totalResolved === 0
+        ? "Be the first couple to find their way back."
+        : totalResolved === 1
+          ? "1 couple has found their way back."
+          : `${totalResolved.toLocaleString()} couples have found their way back.`;
+
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       {/* Top bar — profile icon only */}
@@ -64,7 +82,13 @@ export default function Home() {
       {/* Centered minimal content */}
       <View style={styles.content}>
         <View style={styles.heroBlock}>
-          <Text style={styles.brand} testID="brand-title">
+          <Text
+            style={styles.brand}
+            testID="brand-title"
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
             Be Heard
           </Text>
           <Text style={styles.tagline} testID="tagline">
@@ -81,6 +105,12 @@ export default function Home() {
           <Text style={styles.startBtnText}>Start a case</Text>
           <Feather name="arrow-right" size={20} color="#fff" />
         </TouchableOpacity>
+
+        {motivational && (
+          <Text testID="motivational-stats" style={styles.motivational}>
+            {motivational}
+          </Text>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -116,11 +146,11 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xxl,
   },
   brand: {
-    fontSize: 64,
+    fontSize: 52,
     fontWeight: "800",
     color: theme.colors.textHeading,
-    letterSpacing: -1.8,
-    lineHeight: 68,
+    letterSpacing: -1.6,
+    lineHeight: 56,
   },
   tagline: {
     marginTop: theme.spacing.md,
@@ -138,4 +168,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   startBtnText: { color: "#fff", fontSize: 17, fontWeight: "600" },
+  motivational: {
+    marginTop: theme.spacing.md,
+    fontSize: 13,
+    color: theme.colors.textSubtle,
+    textAlign: "center",
+    fontWeight: "400",
+  },
 });
