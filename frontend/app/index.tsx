@@ -13,14 +13,18 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import { theme } from "@/src/theme";
-import { api, Case } from "@/src/api";
+import { api } from "@/src/api";
 import { getOrCreateUserId, isOnboarded } from "@/src/session";
 
 export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [cases, setCases] = useState<Case[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState<{
+    total_resolved: number;
+    my_resolved: number;
+    my_in_progress: number;
+  } | null>(null);
 
   const load = useCallback(async () => {
     const done = await isOnboarded();
@@ -30,10 +34,10 @@ export default function Home() {
     }
     const uid = await getOrCreateUserId();
     try {
-      const list = await api.listCases(uid);
-      setCases(list);
+      const s = await api.getStats(uid);
+      setStats(s);
     } catch (e) {
-      console.warn("listCases failed", e);
+      console.warn("stats failed", e);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -57,8 +61,6 @@ export default function Home() {
 
   const startNewCase = () => router.push("/case/new");
 
-  const lastCase = cases[0];
-
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -67,11 +69,19 @@ export default function Home() {
     );
   }
 
+  const totalResolved = stats?.total_resolved ?? 0;
+  const motivational =
+    totalResolved === 0
+      ? "Be the first couple to find their way back."
+      : totalResolved === 1
+        ? "1 couple has found their way back."
+        : `${totalResolved.toLocaleString()} couples have found their way back.`;
+
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       {/* Top bar */}
       <View style={styles.topBar}>
-        <Text style={styles.brand} testID="brand-title">Be Heard</Text>
+        <View style={{ width: 40 }} />
         <TouchableOpacity
           testID="profile-icon-button"
           onPress={() => router.push("/profile")}
@@ -86,10 +96,16 @@ export default function Home() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+          />
         }
       >
-        <View style={{ marginTop: theme.spacing.xl }}>
+        <Text style={styles.brand} testID="brand-title">Be Heard</Text>
+
+        <View style={{ marginTop: theme.spacing.lg }}>
           <Text style={styles.hero}>A calm bridge{"\n"}back to each other.</Text>
           <Text style={styles.heroSub}>
             When the silence after an argument feels heavy — start here.
@@ -106,87 +122,45 @@ export default function Home() {
           <Feather name="arrow-right" size={20} color="#fff" />
         </TouchableOpacity>
 
-        <Text style={styles.sectionLabel}>LAST CASE</Text>
+        <Text testID="motivational-stats" style={styles.motivational}>
+          {motivational}
+        </Text>
 
-        {lastCase ? (
-          <TouchableOpacity
-            testID={`case-card-${lastCase.id}`}
-            onPress={() => {
-              if (lastCase.stage === "verdict_ready") router.push(`/verdict/${lastCase.id}`);
-              else router.push(`/case/${lastCase.id}`);
-            }}
-            style={styles.caseCard}
-            activeOpacity={0.85}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.caseTitle} numberOfLines={1}>
-                {lastCase.title}
-              </Text>
-              <View style={styles.caseStatusRow}>
-                <View
-                  style={[
-                    styles.dot,
-                    {
-                      backgroundColor:
-                        lastCase.status === "resolved"
-                          ? theme.colors.success
-                          : theme.colors.primary,
-                    },
-                  ]}
-                />
-                <Text style={styles.caseStatus}>
-                  {lastCase.status === "resolved" ? "Resolved" : "In progress"}
-                </Text>
-              </View>
-            </View>
-            <Feather name="chevron-right" size={20} color={theme.colors.textSubtle} />
-          </TouchableOpacity>
-        ) : (
-          <View testID="no-cases-empty" style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              You have no cases yet. Start one above when you&apos;re ready.
+        <View style={styles.divider} />
+
+        <TouchableOpacity
+          testID="past-cases-button"
+          onPress={() => router.push("/cases")}
+          activeOpacity={0.85}
+          style={styles.linkRow}
+        >
+          <View style={styles.linkIcon}>
+            <Feather name="archive" size={18} color={theme.colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.linkTitle}>Past cases</Text>
+            <Text style={styles.linkSub}>
+              {stats?.my_resolved || 0} resolved · {stats?.my_in_progress || 0} in progress
             </Text>
           </View>
-        )}
+          <Feather name="chevron-right" size={20} color={theme.colors.textSubtle} />
+        </TouchableOpacity>
 
-        {cases.length > 1 && (
-          <View style={{ marginTop: theme.spacing.xl }}>
-            <Text style={styles.sectionLabel}>EARLIER</Text>
-            {cases.slice(1).map((c) => (
-              <TouchableOpacity
-                key={c.id}
-                testID={`case-card-${c.id}`}
-                onPress={() => {
-                  if (c.stage === "verdict_ready") router.push(`/verdict/${c.id}`);
-                  else router.push(`/case/${c.id}`);
-                }}
-                style={styles.caseCardSmall}
-                activeOpacity={0.85}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.caseTitle} numberOfLines={1}>{c.title}</Text>
-                  <View style={styles.caseStatusRow}>
-                    <View
-                      style={[
-                        styles.dot,
-                        {
-                          backgroundColor:
-                            c.status === "resolved"
-                              ? theme.colors.success
-                              : theme.colors.primary,
-                        },
-                      ]}
-                    />
-                    <Text style={styles.caseStatus}>
-                      {c.status === "resolved" ? "Resolved" : "In progress"}
-                    </Text>
-                  </View>
-                </View>
-                <Feather name="chevron-right" size={18} color={theme.colors.textSubtle} />
-              </TouchableOpacity>
-            ))}
+        <TouchableOpacity
+          testID="stats-button"
+          onPress={() => router.push("/stats")}
+          activeOpacity={0.85}
+          style={styles.linkRow}
+        >
+          <View style={styles.linkIcon}>
+            <Feather name="bar-chart-2" size={18} color={theme.colors.primary} />
           </View>
-        )}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.linkTitle}>Your stats</Text>
+            <Text style={styles.linkSub}>Personal and community totals</Text>
+          </View>
+          <Feather name="chevron-right" size={20} color={theme.colors.textSubtle} />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -201,12 +175,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.sm,
   },
-  brand: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: theme.colors.textHeading,
-    letterSpacing: -0.4,
-  },
   profileBtn: {
     width: 40,
     height: 40,
@@ -217,19 +185,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: theme.colors.surface,
   },
-  scroll: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
-  hero: {
-    fontSize: 30,
-    fontWeight: "700",
+  scroll: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+  },
+  brand: {
+    fontSize: 56,
+    fontWeight: "800",
     color: theme.colors.textHeading,
-    letterSpacing: -0.5,
-    lineHeight: 38,
+    letterSpacing: -1.5,
+    lineHeight: 60,
+    marginTop: theme.spacing.md,
+  },
+  hero: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: theme.colors.textBody,
+    letterSpacing: -0.3,
+    lineHeight: 32,
   },
   heroSub: {
-    fontSize: 16,
-    color: theme.colors.textBody,
+    fontSize: 15,
+    color: theme.colors.textSubtle,
     marginTop: theme.spacing.sm,
-    lineHeight: 22,
+    lineHeight: 21,
   },
   startBtn: {
     marginTop: theme.spacing.xl,
@@ -241,57 +220,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  startBtnText: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "600",
+  startBtnText: { color: "#fff", fontSize: 17, fontWeight: "600" },
+  motivational: {
+    marginTop: theme.spacing.md,
+    fontSize: 13,
+    color: theme.colors.primary,
+    textAlign: "center",
+    fontWeight: "500",
   },
-  sectionLabel: {
-    marginTop: theme.spacing.xl,
-    marginBottom: theme.spacing.md,
-    fontSize: 11,
-    letterSpacing: 1.5,
-    color: theme.colors.textSubtle,
-    fontWeight: "700",
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.borderSoft,
+    marginVertical: theme.spacing.xl,
   },
-  caseCard: {
+  linkRow: {
     flexDirection: "row",
     alignItems: "center",
-    padding: theme.spacing.lg,
-    borderRadius: theme.radius.card,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-  },
-  caseCardSmall: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
     marginBottom: theme.spacing.sm,
+    gap: theme.spacing.md,
   },
-  caseTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: theme.colors.textHeading,
-  },
-  caseStatusRow: {
-    flexDirection: "row",
+  linkIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.primaryTint,
     alignItems: "center",
-    marginTop: 6,
+    justifyContent: "center",
   },
-  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  caseStatus: { fontSize: 13, color: theme.colors.textBody },
-  emptyCard: {
-    padding: theme.spacing.lg,
-    borderRadius: theme.radius.card,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-  },
-  emptyText: { fontSize: 14, color: theme.colors.textSubtle, lineHeight: 20 },
+  linkTitle: { fontSize: 15, fontWeight: "600", color: theme.colors.textHeading },
+  linkSub: { fontSize: 13, color: theme.colors.textSubtle, marginTop: 2 },
 });

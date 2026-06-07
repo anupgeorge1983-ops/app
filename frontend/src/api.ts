@@ -91,4 +91,27 @@ export const api = {
     method: "POST",
     body: JSON.stringify(body),
   }),
+  getStats: (user_id: string) =>
+    req<{
+      total_cases: number;
+      total_resolved: number;
+      my_cases: number;
+      my_resolved: number;
+      my_in_progress: number;
+    }>(`/stats?user_id=${encodeURIComponent(user_id)}`),
+  transcribe: async (
+    uri: string,
+    mimeType: string = "audio/m4a",
+    filename: string = "audio.m4a",
+  ): Promise<{ text: string }> => {
+    const form = new FormData();
+    // React Native FormData accepts { uri, name, type } objects
+    form.append("file", { uri, name: filename, type: mimeType } as any);
+    const res = await fetch(`${BASE}/transcribe`, { method: "POST", body: form });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(`Transcribe ${res.status}: ${t || res.statusText}`);
+    }
+    return res.json();
+  },
 };

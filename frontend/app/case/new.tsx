@@ -17,6 +17,7 @@ import { Feather } from "@expo/vector-icons";
 import { theme } from "@/src/theme";
 import { api } from "@/src/api";
 import { getOrCreateUserId, getUserNames } from "@/src/session";
+import { MicButton } from "@/src/components/MicButton";
 
 export default function NewCase() {
   const router = useRouter();
@@ -82,6 +83,13 @@ export default function NewCase() {
               returnKeyType="done"
               onSubmitEditing={onCreate}
             />
+            <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>
+              <MicButton
+                onTranscribed={(t) => setTitle((prev) => (prev ? prev + " " : "") + t)}
+                size="small"
+              />
+              <Text style={styles.micHint}>Or tap to speak</Text>
+            </View>
           </View>
 
           {error && (
@@ -171,5 +179,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.colors.textBody,
     lineHeight: 19,
+  },
+  micHint: {
+    fontSize: 12,
+    color: theme.colors.textSubtle,
+    marginTop: 6,
   },
 });

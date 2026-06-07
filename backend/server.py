@@ -1,8 +1,9 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import io
 import json
 import logging
 import uuid
@@ -13,6 +14,7 @@ from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from emergentintegrations.llm.openai.speech_to_text import OpenAISpeechToText
 
 
 ROOT_DIR = Path(__file__).parent
@@ -531,6 +533,81 @@ async def _maybe_generate_next(case: CaseModel):
 async def delete_case(case_id: str):
     res = await db.cases.delete_one({"id": case_id})
     return {"deleted": res.deleted_count}
+
+
+# ------------------------- Stats -------------------------
+
+class StatsResponse(BaseModel):
+    total_cases: int
+    total_resolved: int
+    my_cases: int
+    my_resolved: int
+    my_in_progress: int
+
+
+@api_router.get("/stats", response_model=StatsResponse)
+async def get_stats(user_id: str):
+    total_cases = await db.cases.count_documents({})
+    total_resolved = await db.cases.count_documents({"status": "resolved"})
+    my_cases = await db.cases.count_documents({"user_id": user_id})
+    my_resolved = await db.cases.count_documents(
+        {"user_id": user_id, "status": "resolved"}
+    )
+    return StatsResponse(
+        total_cases=total_cases,
+        total_resolved=total_resolved,
+        my_cases=my_cases,
+        my_resolved=my_resolved,
+        my_in_progress=my_cases - my_resolved,
+    )
+
+
+# ------------------------- Transcription -------------------------
+
+_stt_client: Optional[OpenAISpeechToText] = None
+
+def _get_stt() -> OpenAISpeechToText:
+    global _stt_client
+    if _stt_client is None:
+        _stt_client = OpenAISpeechToText(api_key=EMERGENT_LLM_KEY)
+    return _stt_client
+
+
+class TranscribeResponse(BaseModel):
+    text: str
+
+
+@api_router.post("/transcribe", response_model=TranscribeResponse)
+async def transcribe(file: UploadFile = File(...)):
+    raw = await file.read()
+    if len(raw) == 0:
+        raise HTTPException(status_code=400, detail="Empty audio file")
+    if len(raw) > 24 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Audio file too large (max 24 MB)")
+
+    name = file.filename or "audio.m4a"
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else "m4a"
+    if ext not in ("m4a", "mp3", "mp4", "mpeg", "mpga", "wav", "webm"):
+        ext = "m4a"
+        name = "audio.m4a"
+
+    bio = io.BytesIO(raw)
+    bio.name = name  # litellm uses .name to detect format
+
+    try:
+        stt = _get_stt()
+        response = await stt.transcribe(file=bio, model="whisper-1", response_format="json")
+        text = ""
+        if hasattr(response, "text"):
+            text = response.text or ""
+        elif isinstance(response, dict):
+            text = response.get("text", "")
+        else:
+            text = str(response)
+        return TranscribeResponse(text=text.strip())
+    except Exception as e:
+        logger.exception("transcription failed")
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {e}")
 
 
 # ------------------------- App wiring -------------------------

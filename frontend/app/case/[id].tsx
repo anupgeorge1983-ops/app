@@ -17,6 +17,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { theme } from "@/src/theme";
 import { api, Case } from "@/src/api";
+import { MicButton } from "@/src/components/MicButton";
 
 type Stage = Case["stage"];
 
@@ -376,6 +377,16 @@ function InputBlock({
         textAlignVertical="top"
       />
 
+      <View style={styles.micRow}>
+        <MicButton
+          onTranscribed={(t) =>
+            setText((prev) => (prev ? prev.trim() + " " + t : t))
+          }
+          size="large"
+        />
+        <Text style={styles.micHint}>Tap to speak instead of type</Text>
+      </View>
+
       {error && <Text testID="case-error" style={styles.error}>{error}</Text>}
 
       <TouchableOpacity
@@ -470,6 +481,15 @@ function MirrorBlock({
             multiline
             textAlignVertical="top"
           />
+          <View style={styles.micRow}>
+            <MicButton
+              onTranscribed={(t) =>
+                setAdjustText((prev) => (prev ? prev.trim() + " " + t : t))
+              }
+              size="small"
+            />
+            <Text style={styles.micHint}>Or tap to speak</Text>
+          </View>
           <TouchableOpacity
             testID="regenerate-mirror-button"
             disabled={busy}
@@ -676,4 +696,14 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.lg,
   },
   whatsappText: { color: "#fff", fontSize: 15, fontWeight: "600" },
+  micRow: {
+    alignItems: "center",
+    marginTop: theme.spacing.lg,
+    gap: 4,
+  },
+  micHint: {
+    fontSize: 12,
+    color: theme.colors.textSubtle,
+    marginTop: 4,
+  },
 });

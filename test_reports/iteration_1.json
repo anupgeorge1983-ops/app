@@ -1,0 +1,54 @@
+{
+  "summary": "Be Heard backend regression: 9/9 pytest tests passed (100%). Validated new POST /api/transcribe (real WAV via espeak-ng+ffmpeg returns non-empty Whisper text; empty file -> 400; >24MB -> 400), new GET /api/stats (fresh user zeroed, my_cases=1/my_in_progress=1 after creating a case, all int fields present), and full case flow regression (create -> r1 submit/confirm-mirror for a & b -> r2 submit a/b -> r3 submit a/b -> resolved with a_verdict & b_verdict pills in {Proportionate, Heightened}). Edge cases (wrong-stage submit -> 400, unknown case -> 404) also pass.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/cases",
+        "issue": "Returns HTTP 200 instead of 201 on creation. Functional but inconsistent with REST conventions (delete also returns 200 with deleted_count rather than 204)."
+      },
+      {
+        "endpoint": "POST /api/transcribe",
+        "issue": "On internal Whisper error the endpoint returns 500 with the raw exception string in 'detail' (server.py:610). Acceptable for MVP, but consider sanitising error messages before production."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_health.py",
+    "/app/backend/tests/test_transcribe.py",
+    "/app/backend/tests/test_stats.py",
+    "/app/backend/tests/test_case_flow.py",
+    "/app/test_reports/pytest/iteration_1.xml"
+  ],
+  "action_items": [
+    "(Optional, minor) Use HTTP 201 for POST /api/cases and /api/profile creates to follow REST conventions.",
+    "(Optional) Sanitise the upstream error message bubbled up from POST /api/transcribe 500 path so we don't leak provider error strings."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 629 lines, approaching the 700-line threshold. Consider splitting LLM helpers, models, and routes into separate modules once it grows further.",
+    "EMERGENT_LLM_KEY, MONGO_URL, DB_NAME are read at import time via os.environ[...] which fails fast - good. No hardcoded URLs detected.",
+    "_strip_id helper exists but isn't actually used; all queries already pass {'_id': 0} projection - safe pattern.",
+    "OpenAISpeechToText client is created lazily and cached in module-global _stt_client - reasonable for serverless-like reloads."
+  ],
+  "updated_files": [
+    "/app/backend/tests/__init__.py (new)",
+    "/app/backend/tests/conftest.py (new)",
+    "/app/backend/tests/test_health.py (new)",
+    "/app/backend/tests/test_transcribe.py (new)",
+    "/app/backend/tests/test_stats.py (new)",
+    "/app/backend/tests/test_case_flow.py (new)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "not tested (per request)"},
+  "seed_data_creation": "No seed data created. Test cases use ephemeral TEST_user_<uuid> user_ids and self-clean via DELETE /api/cases/{id} in finalizers. One spoken WAV fixture synthesized at /tmp/fixtures/speech.wav via espeak-ng + ffmpeg (16kHz mono).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend is healthy. Next agent should focus on FRONTEND (Expo web preview at EXPO_PUBLIC_BACKEND_URL): Home title + motivational stat, Past Cases screen, Stats screen, voice-to-text mic on TextInputs. Note: frontend env key is EXPO_PUBLIC_BACKEND_URL (not EXPO_BACKEND_URL). pytest suite is at /app/backend/tests/ - reuse for regression. Backend /api/transcribe requires multipart field name 'file'. Audio recording in Expo Go web preview may not work for real mic capture - test by mocking or by checking the mic button's UI states only.",
+  "rca_of_issue": "No bugs to RCA - all endpoints healthy."
+}

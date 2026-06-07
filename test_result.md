@@ -101,3 +101,115 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  Be Heard — couples conflict resolution mobile app. MVP demo mode (single device, sequential turns).
+  Claude Sonnet 4.5 mediates a structured 3-round dialogue ending in a verdict for each partner.
+  Simple name-based onboarding (no auth). New asks this iteration:
+    1. Bigger Home title + motivational community stats; remove past cases list from Home.
+    2. Dedicated Past Cases screen.
+    3. Dedicated Stats screen.
+    4. Voice-to-Text microphone button on every text-input screen (Whisper via Emergent key).
+
+backend:
+  - task: "POST /api/transcribe — Whisper transcription endpoint"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "New endpoint accepts multipart file, validates size/ext, calls OpenAISpeechToText (whisper-1) via emergentintegrations. Needs E2E test with a real m4a/wav blob."
+  - task: "GET /api/stats — per-user + community stats"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Returns total_cases, total_resolved, my_cases, my_resolved, my_in_progress."
+  - task: "Existing cases/profile/mirror/verdict flow regression"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "Unchanged in this iteration; please regression-test create → submit → confirm-mirror → verdict end-to-end."
+
+frontend:
+  - task: "Home screen redesign (bigger title, motivational stat, no inline cases list)"
+    implemented: true
+    working: "NA"
+    file: "frontend/app/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Brand 'Be Heard' at 56pt, motivational stat under Start button, two link rows for Past cases + Your stats."
+  - task: "Past Cases screen"
+    implemented: true
+    working: "NA"
+    file: "frontend/app/cases.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Lists in-progress and resolved cases via /api/cases?user_id=. Tapping resolved → /verdict/{id}, in-progress → /case/{id}."
+  - task: "Stats screen"
+    implemented: true
+    working: "NA"
+    file: "frontend/app/stats.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Hero card with total_resolved + 4 personal tiles + 2 community tiles. Pull-to-refresh."
+  - task: "MicButton — record + transcribe (E2E voice flow)"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/MicButton.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Uses expo-audio (RecordingPresets.HIGH_QUALITY). Honors permission contract incl. canAskAgain + Open Settings fallback. Web platform shows a friendly fallback message (recording not supported in web preview). Embedded in case/new.tsx and case/[id].tsx text input screens."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "POST /api/transcribe — Whisper transcription endpoint"
+    - "GET /api/stats — per-user + community stats"
+    - "Home screen redesign (bigger title, motivational stat, no inline cases list)"
+    - "Past Cases screen"
+    - "Stats screen"
+    - "MicButton — record + transcribe (E2E voice flow)"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    - agent: "main"
+      message: "Just finished implementing 4 frontend deliverables + 2 backend endpoints (stats + transcribe). Expo was restarted after expo-audio install. Please run a backend suite first (transcribe with a real audio fixture, stats correctness, regression of cases flow), then a frontend pass for the Home/Stats/Cases UI. MicButton: web preview is expected to show 'Voice recording isn't available on web' — that's intentional, not a bug; only assert UI affordance is present. Use the demo_user_id from /app/memory/test_credentials.md if present, else create a fresh onboarding user."
