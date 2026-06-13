@@ -15,6 +15,7 @@ import { Feather } from "@expo/vector-icons";
 import { theme } from "@/src/theme";
 import { api } from "@/src/api";
 import { getOrCreateUserId } from "@/src/session";
+import { Eyebrow } from "@/src/components/ui";
 
 type Stats = {
   total_cases: number;
@@ -43,32 +44,28 @@ export default function StatsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <View style={styles.topBar}>
+      {/* Header */}
+      <View style={styles.header}>
         <TouchableOpacity
           testID="stats-back-button"
           onPress={() => router.back()}
-          style={{ width: 40, height: 40, justifyContent: "center" }}
+          style={styles.backBtn}
+          activeOpacity={0.7}
         >
-          <Feather name="arrow-left" size={22} color={theme.colors.textHeading} />
+          <Text style={styles.backBtnText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Your stats</Text>
-        <View style={{ width: 40 }} />
+        <Eyebrow label="Your journey" />
+        <Text style={styles.h1}>Stats</Text>
       </View>
 
       {loading || !stats ? (
-        <ActivityIndicator color={theme.colors.primary} style={{ marginTop: 80 }} />
+        <ActivityIndicator color={theme.colors.rose} style={{ marginTop: 60 }} />
       ) : (
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -80,19 +77,23 @@ export default function StatsScreen() {
                 setRefreshing(true);
                 load();
               }}
-              tintColor={theme.colors.primary}
+              tintColor={theme.colors.rose}
             />
           }
         >
           {/* Hero stat */}
           <View testID="hero-stat-card" style={styles.heroCard}>
-            <Text style={styles.heroNumber}>{stats.total_resolved.toLocaleString()}</Text>
+            <Text style={styles.heroNumber}>
+              {stats.total_resolved.toLocaleString()}
+            </Text>
             <Text style={styles.heroLabel}>
-              {stats.total_resolved === 1 ? "couple has" : "couples have"} found their way back
+              {stats.total_resolved === 1 ? "couple has" : "couples have"} found
+              their way back
             </Text>
           </View>
 
-          <Text style={styles.section}>YOU AND YOUR PARTNER</Text>
+          {/* Personal stats */}
+          <Text style={styles.sectionLabel}>You and your partner</Text>
           <View style={styles.grid}>
             <StatTile
               testID="stat-my-resolved"
@@ -102,19 +103,19 @@ export default function StatsScreen() {
             />
             <StatTile
               testID="stat-my-in-progress"
-              icon={<Feather name="clock" size={20} color={theme.colors.primary} />}
+              icon={<Feather name="clock" size={20} color={theme.colors.amber} />}
               value={stats.my_in_progress}
               label="In progress"
             />
             <StatTile
               testID="stat-my-total"
-              icon={<Feather name="archive" size={20} color={theme.colors.textBody} />}
+              icon={<Feather name="archive" size={20} color={theme.colors.charcoal55} />}
               value={stats.my_cases}
               label="Cases started"
             />
             <StatTile
               testID="stat-my-rate"
-              icon={<Feather name="trending-up" size={20} color={theme.colors.warning} />}
+              icon={<Feather name="trending-up" size={20} color={theme.colors.rose} />}
               value={
                 stats.my_cases > 0
                   ? `${Math.round((stats.my_resolved / stats.my_cases) * 100)}%`
@@ -124,25 +125,27 @@ export default function StatsScreen() {
             />
           </View>
 
-          <Text style={[styles.section, { marginTop: theme.spacing.xl }]}>COMMUNITY</Text>
+          {/* Community stats */}
+          <Text style={[styles.sectionLabel, { marginTop: 28 }]}>Community</Text>
           <View style={styles.grid}>
             <StatTile
               testID="stat-total-resolved"
-              icon={<Feather name="heart" size={20} color={theme.colors.primary} />}
+              icon={<Feather name="heart" size={20} color={theme.colors.rose} />}
               value={stats.total_resolved}
               label="Total resolved"
             />
             <StatTile
               testID="stat-total-cases"
-              icon={<Feather name="users" size={20} color={theme.colors.textBody} />}
+              icon={<Feather name="users" size={20} color={theme.colors.charcoal55} />}
               value={stats.total_cases}
               label="Total cases"
             />
           </View>
 
+          {/* Encouragement */}
           {stats.my_resolved > 0 && (
             <View style={styles.encouragement}>
-              <Feather name="award" size={18} color={theme.colors.primary} />
+              <Feather name="award" size={18} color={theme.colors.amber} />
               <Text style={styles.encouragementText}>
                 {stats.my_resolved === 1
                   ? "You've found your way back once. That counts."
@@ -177,70 +180,108 @@ function StatTile({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: theme.colors.background },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.sm,
+  safe: { flex: 1, backgroundColor: theme.colors.cream },
+
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
   },
-  title: { fontSize: 17, fontWeight: "600", color: theme.colors.textHeading },
-  scroll: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
-  heroCard: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.card,
-    padding: theme.spacing.xl,
-    alignItems: "center",
-    marginBottom: theme.spacing.xl,
-  },
-  heroNumber: { fontSize: 64, fontWeight: "800", color: "#fff", letterSpacing: -2 },
-  heroLabel: {
+  backBtn: { alignSelf: "flex-start", paddingVertical: 6, marginBottom: 20 },
+  backBtnText: {
+    fontFamily: theme.fonts.sans,
     fontSize: 14,
-    color: "rgba(255,255,255,0.85)",
-    marginTop: theme.spacing.sm,
+    color: theme.colors.charcoal40,
+  },
+  h1: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 26,
+    lineHeight: 34,
+    color: theme.colors.charcoal,
+    marginBottom: 4,
+  },
+
+  scroll: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 48,
+  },
+
+  // Hero card — amber-soft bg, large Lora number
+  heroCard: {
+    backgroundColor: theme.colors.amberSoft,
+    borderRadius: theme.radius.card,
+    padding: 28,
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  heroNumber: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 64,
+    lineHeight: 72,
+    color: theme.colors.charcoal,
+    letterSpacing: -2,
+  },
+  heroLabel: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 14,
+    color: theme.colors.charcoal55,
+    marginTop: 6,
     textAlign: "center",
+    lineHeight: 22,
   },
-  section: {
+
+  // Section label
+  sectionLabel: {
+    fontFamily: theme.fonts.sansMedium,
     fontSize: 11,
-    letterSpacing: 1.5,
-    fontWeight: "700",
-    color: theme.colors.textSubtle,
-    marginBottom: theme.spacing.md,
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
+    color: theme.colors.charcoal40,
+    marginBottom: 12,
   },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm },
+
+  // Stat grid
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   tile: {
-    flexBasis: "48%",
+    flexBasis: "47%",
     flexGrow: 1,
-    padding: theme.spacing.md,
+    padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.charcoal18,
     backgroundColor: theme.colors.surface,
+    ...theme.shadow.card,
   },
-  tileIcon: { marginBottom: theme.spacing.sm },
+  tileIcon: { marginBottom: 10 },
   tileValue: {
+    fontFamily: theme.fonts.serifMedium,
     fontSize: 28,
-    fontWeight: "700",
-    color: theme.colors.textHeading,
+    color: theme.colors.charcoal,
     letterSpacing: -0.5,
   },
-  tileLabel: { fontSize: 12, color: theme.colors.textSubtle, marginTop: 2 },
+  tileLabel: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 12,
+    color: theme.colors.charcoal40,
+    marginTop: 3,
+  },
+
+  // Encouragement
   encouragement: {
-    marginTop: theme.spacing.xl,
-    padding: theme.spacing.lg,
+    marginTop: 28,
+    padding: 18,
     borderRadius: theme.radius.card,
-    backgroundColor: theme.colors.primaryTint,
-    borderWidth: 1,
-    borderColor: theme.colors.primaryBorder,
+    backgroundColor: theme.colors.roseSoft,
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.spacing.md,
+    gap: 14,
   },
   encouragementText: {
     flex: 1,
+    fontFamily: theme.fonts.sans,
     fontSize: 14,
-    color: theme.colors.textHeading,
-    lineHeight: 21,
+    color: theme.colors.charcoal,
+    lineHeight: 22,
   },
 });

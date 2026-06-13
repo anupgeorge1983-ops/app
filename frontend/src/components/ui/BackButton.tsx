@@ -4,11 +4,12 @@ import { theme } from '@/src/theme';
 interface BackButtonProps {
   onPress: () => void;
   label?: string;
+  testID?: string;
 }
 
-export function BackButton({ onPress, label = '← Back' }: BackButtonProps) {
+export function BackButton({ onPress, label = '← Back', testID }: BackButtonProps) {
   return (
-    <TouchableOpacity onPress={onPress} style={styles.btn} activeOpacity={0.7}>
+    <TouchableOpacity testID={testID} onPress={onPress} style={styles.btn} activeOpacity={0.7}>
       <Text style={styles.text}>{label}</Text>
     </TouchableOpacity>
   );

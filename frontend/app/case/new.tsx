@@ -55,41 +55,45 @@ export default function NewCase() {
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Back */}
           <TouchableOpacity
             testID="new-case-back-button"
             onPress={() => router.back()}
-            style={{ width: 40, height: 40, justifyContent: "center" }}
+            style={styles.backBtn}
+            activeOpacity={0.7}
           >
-            <Feather name="arrow-left" size={22} color={theme.colors.textHeading} />
+            <Text style={styles.backBtnText}>← Back</Text>
           </TouchableOpacity>
 
-          <Text style={styles.h1}>Name this case</Text>
+          {/* Heading */}
+          <Text style={styles.h1}>Name this case.</Text>
           <Text style={styles.sub}>
-            A short name to remember it by. Like &quot;the dinner plans&quot; or &quot;the text
-            yesterday.&quot;
+            A short name to remember it by. Like &quot;the dinner plans&quot; or
+            &quot;the text yesterday.&quot;
           </Text>
 
-          <View style={{ marginTop: theme.spacing.xl }}>
-            <TextInput
-              testID="case-title-input"
-              value={title}
-              onChangeText={setTitle}
-              placeholder="The dinner plans"
-              placeholderTextColor={theme.colors.textSubtle}
-              style={styles.input}
-              autoFocus
-              autoCapitalize="sentences"
-              maxLength={80}
-              returnKeyType="done"
-              onSubmitEditing={onCreate}
+          {/* Input */}
+          <TextInput
+            testID="case-title-input"
+            value={title}
+            onChangeText={setTitle}
+            placeholder="The dinner plans"
+            placeholderTextColor={theme.colors.charcoal40}
+            style={styles.input}
+            autoFocus
+            autoCapitalize="sentences"
+            maxLength={80}
+            returnKeyType="done"
+            onSubmitEditing={onCreate}
+          />
+
+          {/* Mic */}
+          <View style={styles.micRow}>
+            <MicButton
+              onTranscribed={(t) => setTitle((prev) => (prev ? prev + " " : "") + t)}
+              size="small"
             />
-            <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>
-              <MicButton
-                onTranscribed={(t) => setTitle((prev) => (prev ? prev + " " : "") + t)}
-                size="small"
-              />
-              <Text style={styles.micHint}>Or tap to speak</Text>
-            </View>
+            <Text style={styles.micHint}>Or tap to speak</Text>
           </View>
 
           {error && (
@@ -98,25 +102,27 @@ export default function NewCase() {
             </Text>
           )}
 
+          {/* Submit */}
           <TouchableOpacity
             testID="create-case-button"
             disabled={submitting}
             onPress={onCreate}
             activeOpacity={0.85}
-            style={[styles.primaryBtn, submitting && { opacity: 0.6 }]}
+            style={[styles.btnDark, submitting && styles.btnDisabled]}
           >
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.primaryBtnText}>Start case</Text>
+              <Text style={styles.btnDarkText}>Start case</Text>
             )}
           </TouchableOpacity>
 
+          {/* Info card */}
           <View style={styles.infoCard}>
-            <Feather name="info" size={16} color={theme.colors.primary} />
+            <Feather name="info" size={16} color={theme.colors.amber} />
             <Text style={styles.infoText}>
-              You&apos;ll share your side first. Be Heard will mirror what you meant before
-              your partner sees anything.
+              You&apos;ll share your side first. Be Heard will mirror what you
+              meant before your partner sees anything.
             </Text>
           </View>
         </ScrollView>
@@ -126,63 +132,97 @@ export default function NewCase() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: theme.colors.background },
-  container: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
+  safe: { flex: 1, backgroundColor: theme.colors.cream },
+
+  container: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 48,
+  },
+
+  backBtn: { alignSelf: "flex-start", paddingVertical: 6, marginBottom: 28 },
+  backBtnText: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 14,
+    color: theme.colors.charcoal40,
+  },
+
   h1: {
+    fontFamily: theme.fonts.serifMedium,
     fontSize: 28,
-    fontWeight: "700",
-    color: theme.colors.textHeading,
-    marginTop: theme.spacing.md,
-    letterSpacing: -0.5,
+    lineHeight: 36,
+    color: theme.colors.charcoal,
+    marginBottom: 10,
   },
   sub: {
+    fontFamily: theme.fonts.sans,
     fontSize: 15,
-    color: theme.colors.textBody,
-    marginTop: theme.spacing.sm,
-    lineHeight: 22,
+    lineHeight: 24,
+    color: theme.colors.charcoal55,
+    marginBottom: 20,
   },
+
   input: {
-    backgroundColor: theme.colors.inputBg,
+    backgroundColor: theme.colors.offWhite,
     borderRadius: theme.radius.input,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingHorizontal: theme.spacing.md,
+    borderColor: theme.colors.charcoal18,
+    paddingHorizontal: 16,
     paddingVertical: 16,
+    fontFamily: theme.fonts.sans,
     fontSize: 17,
-    color: theme.colors.textHeading,
+    color: theme.colors.charcoal,
+    ...theme.shadow.card,
   },
-  primaryBtn: {
-    backgroundColor: theme.colors.primary,
+
+  micRow: {
+    alignItems: "center",
+    marginTop: 16,
+    gap: 6,
+  },
+  micHint: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 12,
+    color: theme.colors.charcoal40,
+    marginTop: 4,
+  },
+
+  error: {
+    fontFamily: theme.fonts.sans,
+    color: theme.colors.rose,
+    fontSize: 14,
+    marginTop: 12,
+  },
+
+  btnDark: {
+    backgroundColor: theme.colors.charcoal,
     borderRadius: theme.radius.button,
     paddingVertical: 18,
     alignItems: "center",
-    marginTop: theme.spacing.xl,
+    marginTop: 24,
   },
-  primaryBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  error: {
-    color: theme.colors.danger,
-    fontSize: 14,
-    marginTop: theme.spacing.md,
+  btnDarkText: {
+    fontFamily: theme.fonts.sansMedium,
+    color: "#F7F3EE",
+    fontSize: 16,
+    letterSpacing: 0.2,
   },
+  btnDisabled: { opacity: 0.5 },
+
   infoCard: {
     flexDirection: "row",
-    backgroundColor: theme.colors.primaryTint,
+    alignItems: "flex-start",
+    backgroundColor: theme.colors.amberSoft,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.primaryBorder,
-    padding: theme.spacing.md,
-    marginTop: theme.spacing.xl,
-    gap: theme.spacing.sm,
+    padding: 16,
+    marginTop: 20,
+    gap: 10,
   },
   infoText: {
     flex: 1,
+    fontFamily: theme.fonts.sans,
     fontSize: 13,
-    color: theme.colors.textBody,
-    lineHeight: 19,
-  },
-  micHint: {
-    fontSize: 12,
-    color: theme.colors.textSubtle,
-    marginTop: 6,
+    color: theme.colors.charcoal55,
+    lineHeight: 20,
   },
 });

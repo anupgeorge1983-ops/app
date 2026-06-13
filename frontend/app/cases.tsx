@@ -15,6 +15,7 @@ import { Feather } from "@expo/vector-icons";
 import { theme } from "@/src/theme";
 import { api, Case } from "@/src/api";
 import { getOrCreateUserId } from "@/src/session";
+import { Eyebrow } from "@/src/components/ui";
 
 function formatDate(iso: string) {
   try {
@@ -48,35 +49,31 @@ export default function CasesScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const resolved = cases.filter((c) => c.status === "resolved");
   const inProgress = cases.filter((c) => c.status !== "resolved");
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <View style={styles.topBar}>
+      {/* Header */}
+      <View style={styles.header}>
         <TouchableOpacity
           testID="cases-back-button"
           onPress={() => router.back()}
-          style={{ width: 40, height: 40, justifyContent: "center" }}
+          style={styles.backBtn}
+          activeOpacity={0.7}
         >
-          <Feather name="arrow-left" size={22} color={theme.colors.textHeading} />
+          <Text style={styles.backBtnText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Past cases</Text>
-        <View style={{ width: 40 }} />
+        <Eyebrow label="Past conversations" />
+        <Text style={styles.h1}>Your history</Text>
       </View>
 
       {loading ? (
-        <ActivityIndicator color={theme.colors.primary} style={{ marginTop: 80 }} />
+        <ActivityIndicator color={theme.colors.rose} style={{ marginTop: 60 }} />
       ) : (
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -88,39 +85,37 @@ export default function CasesScreen() {
                 setRefreshing(true);
                 load();
               }}
-              tintColor={theme.colors.primary}
+              tintColor={theme.colors.rose}
             />
           }
         >
           {cases.length === 0 ? (
             <View testID="cases-empty" style={styles.empty}>
-              <Feather name="archive" size={28} color={theme.colors.textSubtle} />
-              <Text style={styles.emptyTitle}>No cases yet</Text>
+              <View style={styles.emptyIcon}>
+                <Feather name="archive" size={24} color={theme.colors.charcoal40} />
+              </View>
+              <Text style={styles.emptyTitle}>No conversations yet</Text>
               <Text style={styles.emptySub}>
-                Start a case from the home screen when you&apos;re ready.
+                Start a conversation from the home screen when you&apos;re ready.
               </Text>
             </View>
           ) : (
             <>
               {inProgress.length > 0 && (
-                <>
-                  <Text style={styles.section}>IN PROGRESS</Text>
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>In Progress</Text>
                   {inProgress.map((c) => (
                     <CaseRow key={c.id} c={c} onPress={() => router.push(`/case/${c.id}`)} />
                   ))}
-                </>
+                </View>
               )}
               {resolved.length > 0 && (
-                <>
-                  <Text style={[styles.section, { marginTop: theme.spacing.xl }]}>RESOLVED</Text>
+                <View style={[styles.section, inProgress.length > 0 && { marginTop: 28 }]}>
+                  <Text style={styles.sectionLabel}>Resolved</Text>
                   {resolved.map((c) => (
-                    <CaseRow
-                      key={c.id}
-                      c={c}
-                      onPress={() => router.push(`/verdict/${c.id}`)}
-                    />
+                    <CaseRow key={c.id} c={c} onPress={() => router.push(`/verdict/${c.id}`)} />
                   ))}
-                </>
+                </View>
               )}
             </>
           )}
@@ -136,76 +131,123 @@ function CaseRow({ c, onPress }: { c: Case; onPress: () => void }) {
     <TouchableOpacity
       testID={`case-row-${c.id}`}
       onPress={onPress}
-      activeOpacity={0.85}
+      activeOpacity={0.8}
       style={styles.row}
     >
-      <View style={{ flex: 1 }}>
+      <View style={styles.rowContent}>
+        <Text style={styles.rowDate}>{formatDate(c.created_at)}</Text>
         <Text style={styles.rowTitle} numberOfLines={1}>{c.title}</Text>
-        <View style={styles.rowMeta}>
-          <View
-            style={[
-              styles.dot,
-              {
-                backgroundColor: isResolved ? theme.colors.success : theme.colors.primary,
-              },
-            ]}
-          />
-          <Text style={styles.rowStatus}>
-            {isResolved ? "Resolved" : "In progress"}
-          </Text>
-          <Text style={styles.rowDate}> · {formatDate(c.created_at)}</Text>
-        </View>
+        <Text style={styles.rowStatus}>
+          {isResolved ? "Resolved" : "In progress"}
+        </Text>
       </View>
-      <Feather name="chevron-right" size={18} color={theme.colors.textSubtle} />
+      <View
+        style={[
+          styles.statusDot,
+          { backgroundColor: isResolved ? theme.colors.success : theme.colors.amber },
+        ]}
+      />
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: theme.colors.background },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.sm,
+  safe: { flex: 1, backgroundColor: theme.colors.cream },
+
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
-  title: { fontSize: 17, fontWeight: "600", color: theme.colors.textHeading },
-  scroll: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
-  section: {
+  backBtn: { alignSelf: "flex-start", paddingVertical: 6, marginBottom: 20 },
+  backBtnText: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 14,
+    color: theme.colors.charcoal40,
+  },
+  h1: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 26,
+    lineHeight: 34,
+    color: theme.colors.charcoal,
+    marginBottom: 4,
+  },
+
+  scroll: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 48,
+  },
+
+  section: {},
+  sectionLabel: {
+    fontFamily: theme.fonts.sansMedium,
     fontSize: 11,
-    letterSpacing: 1.5,
-    fontWeight: "700",
-    color: theme.colors.textSubtle,
-    marginBottom: theme.spacing.md,
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
+    color: theme.colors.charcoal40,
+    marginBottom: 12,
   },
+
   row: {
     flexDirection: "row",
     alignItems: "center",
-    padding: theme.spacing.md,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    justifyContent: "space-between",
     backgroundColor: theme.colors.surface,
-    marginBottom: theme.spacing.sm,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 10,
+    ...theme.shadow.card,
   },
-  rowTitle: { fontSize: 16, fontWeight: "600", color: theme.colors.textHeading },
-  rowMeta: { flexDirection: "row", alignItems: "center", marginTop: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  rowStatus: { fontSize: 13, color: theme.colors.textBody },
-  rowDate: { fontSize: 13, color: theme.colors.textSubtle },
-  empty: { alignItems: "center", paddingVertical: theme.spacing.xxl, gap: theme.spacing.sm },
+  rowContent: { flex: 1, paddingRight: 12 },
+  rowDate: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 12,
+    color: theme.colors.charcoal40,
+    marginBottom: 4,
+  },
+  rowTitle: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 16,
+    color: theme.colors.charcoal,
+    marginBottom: 4,
+  },
+  rowStatus: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 13,
+    color: theme.colors.charcoal40,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    flexShrink: 0,
+  },
+
+  empty: {
+    alignItems: "center",
+    paddingVertical: 60,
+    gap: 12,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.colors.creamWarm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   emptyTitle: {
+    fontFamily: theme.fonts.serifMedium,
     fontSize: 18,
-    fontWeight: "600",
-    color: theme.colors.textHeading,
-    marginTop: theme.spacing.md,
+    color: theme.colors.charcoal,
   },
   emptySub: {
+    fontFamily: theme.fonts.sans,
     fontSize: 14,
-    color: theme.colors.textSubtle,
+    color: theme.colors.charcoal40,
     textAlign: "center",
     maxWidth: 260,
-    lineHeight: 20,
+    lineHeight: 22,
   },
 });

@@ -1,5 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -7,6 +14,7 @@ import { Feather } from "@expo/vector-icons";
 import { theme } from "@/src/theme";
 import { api, Profile } from "@/src/api";
 import { getOrCreateUserId, resetSession, getUserNames } from "@/src/session";
+import { Eyebrow } from "@/src/components/ui";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -27,101 +35,110 @@ export default function ProfileScreen() {
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const reset = async () => {
     await resetSession();
     router.replace("/onboarding");
   };
 
+  const displayName = names.name || profile?.name || "You";
+  const displayPartner = names.partner || profile?.partner_name || "Partner";
+
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <View style={styles.topBar}>
+      {/* Header */}
+      <View style={styles.header}>
         <TouchableOpacity
           testID="profile-back-button"
           onPress={() => router.back()}
-          style={{ width: 40, height: 40, justifyContent: "center" }}
+          style={styles.backBtn}
+          activeOpacity={0.7}
         >
-          <Feather name="arrow-left" size={22} color={theme.colors.textHeading} />
+          <Text style={styles.backBtnText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Profile</Text>
-        <View style={{ width: 40 }} />
+        <Eyebrow label="Your profile" />
+        <Text style={styles.h1}>About you</Text>
       </View>
 
       {loading ? (
-        <ActivityIndicator color={theme.colors.primary} style={{ marginTop: 80 }} />
+        <ActivityIndicator color={theme.colors.rose} style={{ marginTop: 60 }} />
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Avatar */}
           <View style={styles.avatarCircle}>
             <Text style={styles.avatarInitial}>
-              {(names.name || profile?.name || "Y").charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </Text>
           </View>
+
           <Text style={styles.name} testID="profile-name">
-            {names.name || profile?.name || "You"}
+            {displayName}
           </Text>
-          <Text style={styles.partner}>
-            with <Text style={{ color: theme.colors.primary, fontWeight: "600" }}>
-              {names.partner || profile?.partner_name || "Partner"}
-            </Text>
+          <Text style={styles.partnerLine}>
+            with{" "}
+            <Text style={styles.partnerName}>{displayPartner}</Text>
           </Text>
 
-          {/* Quick access — past cases & stats */}
+          {/* Quick links */}
           <View style={styles.linksBlock}>
             <TouchableOpacity
               testID="profile-past-cases-button"
               onPress={() => router.push("/cases")}
-              activeOpacity={0.85}
+              activeOpacity={0.8}
               style={styles.linkRow}
             >
               <View style={styles.linkIcon}>
-                <Feather name="archive" size={18} color={theme.colors.primary} />
+                <Feather name="archive" size={18} color={theme.colors.amber} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.linkTitle}>Past cases</Text>
+                <Text style={styles.linkTitle}>Past conversations</Text>
                 <Text style={styles.linkSub}>Review your history</Text>
               </View>
-              <Feather name="chevron-right" size={20} color={theme.colors.textSubtle} />
+              <Feather name="chevron-right" size={18} color={theme.colors.charcoal40} />
             </TouchableOpacity>
 
             <TouchableOpacity
               testID="profile-stats-button"
               onPress={() => router.push("/stats")}
-              activeOpacity={0.85}
+              activeOpacity={0.8}
               style={styles.linkRow}
             >
               <View style={styles.linkIcon}>
-                <Feather name="bar-chart-2" size={18} color={theme.colors.primary} />
+                <Feather name="bar-chart-2" size={18} color={theme.colors.rose} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.linkTitle}>Your stats</Text>
                 <Text style={styles.linkSub}>Personal and community totals</Text>
               </View>
-              <Feather name="chevron-right" size={20} color={theme.colors.textSubtle} />
+              <Feather name="chevron-right" size={18} color={theme.colors.charcoal40} />
             </TouchableOpacity>
           </View>
 
+          {/* Conflict style answers */}
           {profile?.answers && profile.answers.length > 0 && (
-            <View style={{ marginTop: theme.spacing.xl }}>
-              <Text style={styles.section}>YOUR CONFLICT STYLE</Text>
+            <View style={styles.answersBlock}>
+              <Text style={styles.sectionLabel}>Your conflict style</Text>
               {profile.answers.map((a, idx) => (
                 <View key={idx} style={styles.answerCard}>
-                  <Text style={styles.q}>{a.question}</Text>
-                  <Text style={styles.a}>{a.answer}</Text>
+                  <Text style={styles.answerQ}>{a.question}</Text>
+                  <Text style={styles.answerA}>{a.answer}</Text>
                 </View>
               ))}
             </View>
           )}
 
+          {/* Reset */}
           <TouchableOpacity
             testID="reset-session-button"
             onPress={reset}
-            activeOpacity={0.85}
+            activeOpacity={0.7}
             style={styles.resetBtn}
           >
-            <Feather name="refresh-cw" size={16} color={theme.colors.danger} />
+            <Feather name="refresh-cw" size={15} color={theme.colors.charcoal40} />
             <Text style={styles.resetText}>Reset onboarding</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -131,86 +148,147 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: theme.colors.background },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
+  safe: { flex: 1, backgroundColor: theme.colors.cream },
+
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
   },
-  title: { fontSize: 17, fontWeight: "600", color: theme.colors.textHeading },
-  scroll: { padding: theme.spacing.lg, alignItems: "stretch" },
+  backBtn: { alignSelf: "flex-start", paddingVertical: 6, marginBottom: 20 },
+  backBtnText: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 14,
+    color: theme.colors.charcoal40,
+  },
+  h1: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 26,
+    lineHeight: 34,
+    color: theme.colors.charcoal,
+    marginBottom: 4,
+  },
+
+  scroll: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 48,
+    alignItems: "stretch",
+  },
+
+  // Avatar
   avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: theme.colors.primaryTint,
-    borderWidth: 1,
-    borderColor: theme.colors.primaryBorder,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: theme.colors.roseSoft,
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
-    marginTop: theme.spacing.md,
+    marginTop: 8,
+    marginBottom: 14,
   },
-  avatarInitial: { fontSize: 32, fontWeight: "700", color: theme.colors.primary },
+  avatarInitial: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 30,
+    color: theme.colors.rose,
+  },
   name: {
+    fontFamily: theme.fonts.serifMedium,
     fontSize: 22,
-    fontWeight: "700",
-    color: theme.colors.textHeading,
+    color: theme.colors.charcoal,
     textAlign: "center",
-    marginTop: theme.spacing.md,
+    marginBottom: 4,
   },
-  partner: { fontSize: 14, color: theme.colors.textBody, textAlign: "center", marginTop: 4 },
+  partnerLine: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 14,
+    color: theme.colors.charcoal55,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  partnerName: {
+    fontFamily: theme.fonts.sansMedium,
+    color: theme.colors.rose,
+  },
+
+  // Links
   linksBlock: {
-    marginTop: theme.spacing.xl,
-    gap: theme.spacing.sm,
+    marginTop: 24,
+    gap: 10,
   },
   linkRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.charcoal18,
     backgroundColor: theme.colors.surface,
-    gap: theme.spacing.md,
+    gap: 14,
+    ...theme.shadow.card,
   },
   linkIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: theme.colors.primaryTint,
+    backgroundColor: theme.colors.amberSoft,
     alignItems: "center",
     justifyContent: "center",
   },
-  linkTitle: { fontSize: 15, fontWeight: "600", color: theme.colors.textHeading },
-  linkSub: { fontSize: 13, color: theme.colors.textSubtle, marginTop: 2 },
-  section: {
+  linkTitle: {
+    fontFamily: theme.fonts.sansMedium,
+    fontSize: 15,
+    color: theme.colors.charcoal,
+  },
+  linkSub: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 13,
+    color: theme.colors.charcoal40,
+    marginTop: 2,
+  },
+
+  // Answers
+  answersBlock: { marginTop: 32 },
+  sectionLabel: {
+    fontFamily: theme.fonts.sansMedium,
     fontSize: 11,
-    letterSpacing: 1.5,
-    fontWeight: "700",
-    color: theme.colors.textSubtle,
-    marginBottom: theme.spacing.md,
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
+    color: theme.colors.charcoal40,
+    marginBottom: 12,
   },
   answerCard: {
-    padding: theme.spacing.md,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    marginBottom: theme.spacing.sm,
+    backgroundColor: theme.colors.creamWarm,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 8,
   },
-  q: { fontSize: 13, color: theme.colors.textSubtle, marginBottom: 4 },
-  a: { fontSize: 15, color: theme.colors.textHeading, fontWeight: "500" },
+  answerQ: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 12,
+    color: theme.colors.charcoal40,
+    marginBottom: 5,
+  },
+  answerA: {
+    fontFamily: theme.fonts.sansMedium,
+    fontSize: 15,
+    color: theme.colors.charcoal,
+  },
+
+  // Reset
   resetBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.xxl,
-    padding: theme.spacing.md,
+    gap: 8,
+    marginTop: 40,
+    paddingVertical: 12,
   },
-  resetText: { color: theme.colors.danger, fontSize: 14, fontWeight: "600" },
+  resetText: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 14,
+    color: theme.colors.charcoal40,
+  },
 });
