@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Be Heard — Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #F9F7F4;
+    --cream-warm: #F5EEE8;
+    --cream-deep: #F1E8DC;
+    --charcoal: #2C2C2A;
+    --charcoal-55: rgba(44,44,42,0.55);
+    --charcoal-40: rgba(44,44,42,0.40);
+    --charcoal-18: rgba(44,44,42,0.18);
+    --rose: #C9877A;
+    --rose-soft: rgba(201,135,122,0.12);
+    --amber: #D4A853;
+    --amber-soft: rgba(212,168,83,0.12);
+    --serif: 'Lora', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    background: #E8E2D9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--sans);
+  }
+
+  .device {
+    width: 390px;
+    min-height: 100dvh;
+    max-height: 844px;
+    background: var(--cream);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 32px 80px rgba(44,44,42,0.18);
+    border-radius: 40px;
+  }
+
+  @media (max-width: 430px) {
+    .device { border-radius: 0; max-height: none; min-height: 100dvh; }
+    html, body { background: var(--cream); }
+  }
+
+  /* Screens */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 52px 28px 36px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.65s cubic-bezier(0.4,0,0.2,1), transform 0.65s cubic-bezier(0.4,0,0.2,1);
+    transform: translateY(12px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+  }
+
+  .screen.exit {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  /* Ambient bg blobs */
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .blob-tr {
+    width: 280px; height: 280px;
+    top: -80px; right: -80px;
+    background: radial-gradient(circle, rgba(245,232,228,0.55) 0%, transparent 70%);
+    animation: float1 10s ease-in-out infinite;
+  }
+
+  .blob-bl {
+    width: 240px; height: 240px;
+    bottom: -60px; left: -60px;
+    background: radial-gradient(circle, rgba(243,236,220,0.5) 0%, transparent 70%);
+    animation: float2 12s ease-in-out infinite;
+  }
+
+  @keyframes float1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(14px)} }
+  @keyframes float2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+
+  /* Typography */
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 20px;
+  }
+  .eyebrow-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--rose);
+  }
+  .eyebrow-text {
+    font-family: var(--sans); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--charcoal-40);
+  }
+
+  h1 {
+    font-family: var(--serif); font-size: 34px; font-weight: 500;
+    line-height: 1.2; color: var(--charcoal); margin-bottom: 16px;
+  }
+
+  h1 em { color: var(--rose); font-style: italic; }
+
+  h2 {
+    font-family: var(--serif); font-size: 26px; font-weight: 500;
+    line-height: 1.25; color: var(--charcoal); margin-bottom: 12px;
+  }
+
+  .subtext {
+    font-size: 16px; line-height: 1.75; color: var(--charcoal-55);
+    max-width: 300px;
+  }
+
+  /* Buttons */
+  .btn {
+    width: 100%; padding: 18px 24px; border-radius: 16px;
+    font-family: var(--sans); font-size: 16px; font-weight: 500;
+    letter-spacing: 0.01em; border: none; cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    text-align: center;
+  }
+  .btn:active { transform: scale(0.98); opacity: 0.9; }
+
+  .btn-dark { background: var(--charcoal); color: #F7F3EE; }
+  .btn-ghost { background: transparent; color: var(--charcoal); border: 1.5px solid var(--charcoal-18); }
+  .btn-rose { background: var(--rose); color: #fff; }
+  .btn-text {
+    background: none; border: none; cursor: pointer;
+    font-family: var(--sans); font-size: 14px; color: var(--charcoal-40);
+    letter-spacing: 0.02em; padding: 8px; text-align: center; width: 100%;
+  }
+
+  .btn-stack { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
+
+  /* Back button */
+  .back-btn {
+    background: none; border: none; cursor: pointer;
+    font-family: var(--sans); font-size: 14px; color: var(--charcoal-40);
+    padding: 0; margin-bottom: 32px; text-align: left; display: inline-block;
+  }
+
+  /* Cards */
+  .card {
+    background: white; border-radius: 20px;
+    padding: 24px; margin-bottom: 12px;
+    box-shadow: 0 2px 16px rgba(44,44,42,0.06);
+  }
+
+  .card-warm {
+    background: var(--cream-warm);
+    border-radius: 20px; padding: 24px; margin-bottom: 16px;
+  }
+
+  .card-label {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--charcoal-40); margin-bottom: 10px;
+  }
+
+  .card-body {
+    font-family: var(--serif); font-size: 17px; font-style: italic;
+    line-height: 1.7; color: var(--charcoal);
+  }
+
+  /* Session code */
+  .code-display {
+    background: white; border-radius: 20px; padding: 32px 24px;
+    text-align: center; margin: 24px 0;
+    box-shadow: 0 2px 16px rgba(44,44,42,0.06);
+  }
+  .code-label { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--charcoal-40); margin-bottom: 12px; }
+  .code-value {
+    font-family: 'Courier New', monospace; font-size: 36px; font-weight: 700;
+    color: var(--charcoal); letter-spacing: 0.12em;
+  }
+  .code-expires { font-size: 13px; color: var(--charcoal-40); margin-top: 10px; }
+
+  /* Breathing circle */
+  .breath-container {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; flex: 1; gap: 0;
+  }
+
+  .breath-outer {
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,135,122,0.08) 0%, transparent 70%);
+    display: flex; align-items: center; justify-content: center;
+    animation: breathe-outer 4s ease-in-out infinite;
+  }
+
+  .breath-mid {
+    width: 150px; height: 150px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,135,122,0.12) 0%, transparent 70%);
+    display: flex; align-items: center; justify-content: center;
+    animation: breathe-mid 4s ease-in-out infinite;
+  }
+
+  .breath-inner {
+    width: 90px; height: 90px; border-radius: 50%;
+    background: rgba(201,135,122,0.25);
+    animation: breathe-inner 4s ease-in-out infinite;
+  }
+
+  @keyframes breathe-outer { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+  @keyframes breathe-mid { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+  @keyframes breathe-inner { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
+  .breath-label {
+    font-family: var(--serif); font-size: 18px; color: var(--charcoal-55);
+    margin-top: 28px; font-style: italic;
+  }
+
+  /* Mirror screen — the letter */
+  .mirror-card {
+    position: relative;
+    background: #FFFDFB;
+    border-radius: 24px;
+    padding: 44px 32px;
+    margin: 24px 4px;
+    box-shadow: 0 12px 40px rgba(44,44,42,0.10), 0 2px 8px rgba(44,44,42,0.04);
+    overflow: hidden;
+  }
+  /* Soft warm glows in opposite corners — echo the two orbs */
+  .mirror-card::before {
+    content: "";
+    position: absolute; top: -40px; right: -40px;
+    width: 140px; height: 140px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,135,122,0.22) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .mirror-card::after {
+    content: "";
+    position: absolute; bottom: -40px; left: -40px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,168,83,0.16) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  /* Framing lines — opening (rose) and closing (amber) marks */
+  .mirror-mark {
+    width: 28px; height: 2px; border-radius: 2px; position: relative; z-index: 1;
+  }
+  .mirror-mark-open { background: var(--rose); margin-bottom: 24px; }
+  .mirror-mark-close { background: var(--amber); margin-top: 24px; margin-left: auto; }
+  .mirror-card .card-body { position: relative; z-index: 1; }
+
+  /* Mirror screen — fit to viewport, no scroll */
+  #screen-mirror { padding-top: 44px; padding-bottom: 28px; justify-content: flex-start; }
+  #screen-mirror .mirror-card { padding: 32px 28px; margin: 18px 2px; }
+  #screen-mirror .card-body { font-size: 16px; line-height: 1.6; }
+  #screen-mirror .mirror-mark-open { margin-bottom: 18px; }
+  #screen-mirror .mirror-mark-close { margin-top: 18px; }
+  #screen-mirror .mirror-confirm { text-align: center; margin: 0 auto 6px; font-size: 15px; }
+  #screen-mirror .mirror-note { font-size: 12px; color: var(--charcoal-40); text-align: center; margin-bottom: 16px; }
+  #screen-mirror .btn-stack { margin-top: 0; }
+
+  /* Round indicator */
+  .round-dots {
+    display: flex; gap: 8px; justify-content: center; margin-bottom: 28px;
+  }
+  .round-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--charcoal-18);
+    transition: background 0.4s;
+  }
+  .round-dot.active { background: var(--charcoal); }
+
+  /* Verdict cards */
+  .verdict-card {
+    border-radius: 16px; padding: 16px 18px; margin-bottom: 9px;
+  }
+  .verdict-card-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .verdict-card-body {
+    font-size: 14px; line-height: 1.55; color: var(--charcoal);
+  }
+  .verdict-well { background: var(--amber-soft); }
+  .verdict-well .verdict-card-label { color: var(--amber); }
+  .verdict-diff { background: var(--rose-soft); }
+  .verdict-diff .verdict-card-label { color: var(--rose); }
+  .verdict-action { background: var(--charcoal); }
+  .verdict-action .verdict-card-label { color: rgba(247,243,238,0.6); }
+  .verdict-action .verdict-card-body { color: #F7F3EE; font-weight: 500; }
+  .verdict-what { background: rgba(255,255,255,0.6); }
+  .verdict-what .verdict-card-label { color: var(--charcoal-40); }
+
+  /* Verdict tabs */
+  .verdict-tabs {
+    display: flex; gap: 6px; background: rgba(44,44,42,0.06);
+    border-radius: 100px; padding: 4px; margin-bottom: 16px;
+  }
+  .verdict-tab {
+    flex: 1; border: none; background: transparent; cursor: pointer;
+    padding: 9px; border-radius: 100px; font-family: var(--sans);
+    font-size: 14px; font-weight: 500; color: var(--charcoal-40);
+    transition: background 0.3s, color 0.3s;
+  }
+  .verdict-tab.active { background: #FFFDFB; color: var(--charcoal); box-shadow: 0 1px 4px rgba(44,44,42,0.08); }
+
+  .pill {
+    display: inline-block; padding: 4px 12px; border-radius: 100px;
+    font-size: 12px; font-weight: 500; margin-bottom: 16px;
+  }
+  .pill-proportionate { background: rgba(74,159,107,0.12); color: #2D7A4F; }
+  .pill-heightened { background: var(--amber-soft); color: #8A6520; }
+
+  /* Input */
+  .journal-input {
+    width: 100%; background: white; border: none; border-radius: 16px;
+    padding: 18px; font-family: var(--sans); font-size: 16px;
+    line-height: 1.7; color: var(--charcoal); resize: none; height: 150px;
+    outline: none; box-shadow: 0 2px 16px rgba(44,44,42,0.06);
+    margin: 18px 0;
+  }
+  .journal-input::placeholder { color: var(--charcoal-40); }
+  .verdict-head { margin-bottom: 4px; }
+
+  /* Voice input row */
+  .voice-row {
+    display: flex; align-items: center; gap: 14px;
+    background: #FFFDFB; border-radius: 16px; padding: 16px 18px;
+    box-shadow: 0 2px 16px rgba(44,44,42,0.06); margin-top: 18px;
+  }
+  .mic-btn {
+    width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+    background: var(--rose); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s, opacity 0.2s;
+  }
+  .mic-btn:active { transform: scale(0.94); }
+  .mic-btn svg { width: 20px; height: 20px; }
+  .voice-label {
+    font-family: var(--sans); font-size: 14px; color: var(--charcoal-55);
+    line-height: 1.4;
+  }
+  .voice-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 14px 0; color: var(--charcoal-40); font-size: 12px;
+  }
+  .voice-divider::before, .voice-divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--charcoal-18);
+  }
+
+  /* Partner message — letter style */
+  .letter-header { margin-bottom: 20px; }
+  .letter-from {
+    font-family: var(--sans); font-size: 12px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--charcoal-40); margin-bottom: 6px;
+  }
+  .letter-name {
+    font-family: var(--serif); font-size: 28px; font-style: italic;
+    color: var(--rose); font-weight: 500;
+  }
+  .letter-card {
+    position: relative; background: #FFFDFB; border-radius: 24px;
+    padding: 32px 28px; box-shadow: 0 12px 40px rgba(44,44,42,0.10), 0 2px 8px rgba(44,44,42,0.04);
+    overflow: hidden;
+  }
+  .letter-card::after {
+    content: ""; position: absolute; bottom: -36px; left: -36px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,168,83,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .letter-accent {
+    width: 28px; height: 2px; border-radius: 2px; background: var(--amber);
+    margin-bottom: 22px; position: relative; z-index: 1;
+  }
+  .letter-body {
+    font-family: var(--serif); font-size: 17px; font-style: italic;
+    line-height: 1.8; color: var(--charcoal); position: relative; z-index: 1;
+  }
+  .letter-attribution {
+    display: flex; align-items: center; gap: 10px; margin-top: 22px;
+    position: relative; z-index: 1;
+  }
+  .letter-avatar {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--rose-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--sans); font-size: 13px; color: var(--rose); font-weight: 500;
+  }
+  .letter-attribution-text {
+    font-family: var(--sans); font-size: 13px; color: var(--charcoal-40);
+  }
+
+  /* Rewrite confirmation — what you wrote vs what they'll receive */
+  .rewrite-block { margin-bottom: 14px; }
+  .rewrite-label {
+    font-family: var(--sans); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .rewrite-original {
+    background: rgba(44,44,42,0.04); border-radius: 16px; padding: 18px 20px;
+  }
+  .rewrite-original .rewrite-label { color: var(--charcoal-40); }
+  .rewrite-original p {
+    font-family: var(--sans); font-size: 14px; line-height: 1.6;
+    color: var(--charcoal-55);
+  }
+  .rewrite-arrow {
+    text-align: center; color: var(--charcoal-40); font-size: 18px; margin: 4px 0;
+  }
+  .rewrite-new {
+    position: relative; background: #FFFDFB; border-radius: 16px; padding: 20px;
+    box-shadow: 0 8px 28px rgba(44,44,42,0.08); overflow: hidden;
+  }
+  .rewrite-new::after {
+    content: ""; position: absolute; bottom: -30px; right: -30px;
+    width: 100px; height: 100px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,135,122,0.16) 0%, transparent 70%);
+  }
+  .rewrite-new .rewrite-label { color: var(--rose); }
+  .rewrite-new p {
+    font-family: var(--serif); font-size: 16px; font-style: italic;
+    line-height: 1.7; color: var(--charcoal); position: relative; z-index: 1;
+  }
+
+  /* History */
+  .history-item {
+    background: white; border-radius: 16px; padding: 18px 20px;
+    margin-bottom: 10px; box-shadow: 0 2px 12px rgba(44,44,42,0.05);
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer;
+  }
+  .history-date { font-size: 12px; color: var(--charcoal-40); margin-bottom: 4px; }
+  .history-title { font-family: var(--serif); font-size: 16px; color: var(--charcoal); }
+  .history-status {
+    width: 8px; height: 8px; border-radius: 50%; background: #4A9F6B; flex-shrink: 0;
+  }
+
+  /* Gradient screen variant */
+  .screen-gradient { background: linear-gradient(160deg, #F9F7F4 0%, #F5EEE8 40%, #F1E8DC 100%); }
+
+  /* Two orbs drifting in and merging — home screen */
+  .orb-stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    pointer-events: none;
+  }
+
+  .orb {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation-duration: 12s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    animation-iteration-count: infinite;
+  }
+
+  /* Orbs start apart, drift together until they overlap, ease back — endlessly */
+  .orb-a { animation-name: driftA; }
+  .orb-b { animation-name: driftB; }
+
+  @keyframes driftA {
+    0%   { transform: translateX(-46px) scale(0.92); opacity: 0.55; }
+    50%  { transform: translateX(14px)  scale(1.04); opacity: 0.9; }
+    100% { transform: translateX(-46px) scale(0.92); opacity: 0.55; }
+  }
+  @keyframes driftB {
+    0%   { transform: translateX(46px)  scale(0.92); opacity: 0.5; }
+    50%  { transform: translateX(-14px) scale(1.04); opacity: 0.85; }
+    100% { transform: translateX(46px)  scale(0.92); opacity: 0.5; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .orb { animation: none; }
+    .orb-a { transform: translateX(-10px); }
+    .orb-b { transform: translateX(10px); }
+  }
+
+  /* Spacers */
+  .spacer { flex: 1; }
+  .mt-auto { margin-top: auto; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-24 { margin-bottom: 24px; }
+  .mb-32 { margin-bottom: 32px; }
+
+  /* Profile icon (home top-right) */
+  .profile-icon {
+    position: absolute; top: 0; right: 0; z-index: 5;
+    width: 42px; height: 42px; border-radius: 50%;
+    background: #FFFDFB; border: 1px solid var(--charcoal-18);
+    color: var(--charcoal); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 10px rgba(44,44,42,0.05);
+    transition: transform 0.15s;
+  }
+  .profile-icon:active { transform: scale(0.94); }
+  .profile-icon svg { width: 20px; height: 20px; }
+
+  /* Form fields */
+  .field { margin-bottom: 16px; }
+  .field-label {
+    display: block; font-family: var(--sans); font-size: 13px;
+    color: var(--charcoal-55); margin-bottom: 7px; font-weight: 500;
+  }
+  .field-label .req { color: var(--rose); margin-left: 2px; }
+  .field-input {
+    width: 100%; background: #FFFDFB; border: 1px solid var(--charcoal-18);
+    border-radius: 12px; padding: 14px 16px; font-family: var(--sans);
+    font-size: 15px; color: var(--charcoal); outline: none;
+    transition: border-color 0.2s;
+  }
+  .field-input:focus { border-color: var(--rose); }
+  .field-input::placeholder { color: var(--charcoal-40); }
+  select.field-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%23999' stroke-width='1.5' d='M1 1l5 5 5-5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; }
+  .field-row { display: flex; gap: 12px; }
+  .field-row .field { flex: 1; }
+
+  /* Profile linked row */
+  .profile-link-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #FFFDFB; border: 1px solid var(--charcoal-18);
+    border-radius: 12px; padding: 16px; cursor: pointer; margin-top: 4px;
+    transition: border-color 0.2s;
+  }
+  .profile-link-row:active { border-color: var(--rose); }
+  .profile-link-label { font-family: var(--sans); font-size: 15px; color: var(--charcoal); }
+  .profile-link-sub { font-size: 12px; color: var(--charcoal-40); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="device">
+
+  <!-- ── SCREEN 1: HOME ── -->
+  <div class="screen active" id="screen-home" style="overflow:hidden;">
+    <div class="blob blob-tr"></div>
+    <div class="blob blob-bl"></div>
+    <div style="position:relative; display:flex; flex-direction:column; flex:1; min-height:0;">
+      <button class="profile-icon" onclick="go('screen-profile')" aria-label="Your profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>
+        </svg>
+      </button>
+      <div>
+        <div class="eyebrow">
+          <div class="eyebrow-dot"></div>
+          <span class="eyebrow-text">Be Heard</span>
+        </div>
+        <h1>A quiet space<br>to find your<br><em>way back.</em></h1>
+        <p class="subtext">When the argument is over but the distance remains — this is where you begin.</p>
+      </div>
+      <div class="orb-stage">
+        <svg viewBox="0 0 280 200" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <defs>
+            <radialGradient id="orbA" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#C9877A" stop-opacity="0.55"/>
+              <stop offset="60%" stop-color="#C9877A" stop-opacity="0.22"/>
+              <stop offset="100%" stop-color="#C9877A" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="orbB" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#D4A853" stop-opacity="0.5"/>
+              <stop offset="60%" stop-color="#D4A853" stop-opacity="0.2"/>
+              <stop offset="100%" stop-color="#D4A853" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="soften"><feGaussianBlur stdDeviation="2.2"/></filter>
+          </defs>
+          <g filter="url(#soften)">
+            <circle class="orb orb-a" cx="118" cy="100" r="46" fill="url(#orbA)"/>
+            <circle class="orb orb-b" cx="162" cy="100" r="46" fill="url(#orbB)"/>
+          </g>
+        </svg>
+      </div>
+      <div class="btn-stack">
+        <button class="btn btn-dark" onclick="go('screen-session-start')">Start a conversation</button>
+        <button class="btn btn-ghost" onclick="go('screen-join')">Join a conversation</button>
+        <button class="btn-text" onclick="go('screen-history')">View past conversations</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 2: SESSION START ── -->
+  <div class="screen" id="screen-session-start">
+    <button class="back-btn" onclick="go('screen-home')">← Back</button>
+    <h2>Your conversation<br>is ready.</h2>
+    <p class="subtext">Share this code with your partner when you're both ready to begin.</p>
+    <div class="code-display">
+      <div class="code-label">Conversation code</div>
+      <div class="code-value">BH·4829</div>
+      <div class="code-expires">Expires in 30 minutes</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="btn-stack">
+      <button class="btn btn-ghost" onclick="go('screen-waiting')">Copy code</button>
+      <button class="btn btn-dark" onclick="go('screen-waiting')">Share with partner →</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 3: WAITING ROOM ── -->
+  <div class="screen" id="screen-waiting">
+    <div class="eyebrow" style="justify-content:center;">
+      <div class="eyebrow-dot"></div>
+      <span class="eyebrow-text">Be Heard</span>
+    </div>
+    <div class="breath-container">
+      <div class="breath-outer">
+        <div class="breath-mid">
+          <div class="breath-inner"></div>
+        </div>
+      </div>
+      <div style="text-align:center; margin-top:32px;">
+        <h2 style="margin-bottom:8px;">Waiting for<br><em style="color:var(--rose)">Jordan</em> to join...</h2>
+        <p class="subtext" style="text-align:center; max-width:260px; margin:0 auto;">Take a breath. There's no rush here. This space will be ready when you both are.</p>
+      </div>
+    </div>
+    <button class="btn btn-ghost mt-auto" onclick="go('screen-reflection')">Continue (demo)</button>
+  </div>
+
+  <!-- ── SCREEN 4: REFLECTION ── -->
+  <div class="screen" id="screen-reflection">
+    <button class="back-btn" onclick="go('screen-waiting')">← Back</button>
+    <div class="round-dots">
+      <div class="round-dot active"></div>
+      <div class="round-dot"></div>
+      <div class="round-dot"></div>
+    </div>
+    <h2>Tell us what happened.</h2>
+    <p class="subtext">This is just for you — your partner won't see your words, only what they meant.</p>
+    <div class="voice-row">
+      <button class="mic-btn" aria-label="Record your side">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/>
+        </svg>
+      </button>
+      <span class="voice-label">Hold to speak your side — it's easier than typing when you're upset.</span>
+    </div>
+    <div class="voice-divider">or write it</div>
+    <textarea class="journal-input" style="margin-top:0;" placeholder="I felt like you weren't really listening. Every time I tried to explain, you just shut down and I didn't know how to reach you..."></textarea>
+    <div class="spacer"></div>
+    <div class="btn-stack">
+      <button class="btn btn-dark" onclick="go('screen-mirror')">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 5: MIRROR ── -->
+  <div class="screen" id="screen-mirror">
+    <button class="back-btn" onclick="go('screen-reflection')">← Back</button>
+    <div class="eyebrow">
+      <div class="eyebrow-dot"></div>
+      <span class="eyebrow-text">Here's what we heard</span>
+    </div>
+    <div class="mirror-card">
+      <div class="mirror-mark mirror-mark-open"></div>
+      <p class="card-body">"Underneath the frustration, it sounds like you felt unseen — like your perspective wasn't being taken seriously, and that hurt more than the argument itself. You weren't asking them to agree with you. You just needed to know that you mattered."</p>
+      <div class="mirror-mark mirror-mark-close"></div>
+    </div>
+    <p class="mirror-confirm">Does this capture what you meant?</p>
+    <p class="mirror-note">Your partner will respond to this — not your exact words.</p>
+    <div class="spacer"></div>
+    <div class="btn-stack">
+      <button class="btn btn-rose" onclick="go('screen-waiting2')">Yes, that's it</button>
+      <button class="btn btn-ghost" onclick="go('screen-reflection')">Not quite — let me adjust</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 6: WAITING BETWEEN ROUNDS ── -->
+  <div class="screen" id="screen-waiting2">
+    <div class="eyebrow" style="justify-content:center;">
+      <div class="eyebrow-dot"></div>
+      <span class="eyebrow-text">Be Heard</span>
+    </div>
+    <div class="breath-container">
+      <div class="breath-outer">
+        <div class="breath-mid">
+          <div class="breath-inner"></div>
+        </div>
+      </div>
+      <div style="text-align:center; margin-top:32px;">
+        <h2 style="margin-bottom:8px;"><em style="color:var(--rose)">Jordan</em> is still<br>reflecting.</h2>
+        <p class="subtext" style="text-align:center; max-width:240px; margin:0 auto;">Take a breath. There's no rush.</p>
+      </div>
+    </div>
+    <button class="btn btn-ghost mt-auto" onclick="go('screen-round2')">Continue (demo)</button>
+  </div>
+
+  <!-- ── SCREEN 7a: ROUND 2 — PARTNER MESSAGE ── -->
+  <div class="screen" id="screen-round2">
+    <button class="back-btn" onclick="go('screen-waiting2')">← Back</button>
+    <div class="round-dots">
+      <div class="round-dot active"></div>
+      <div class="round-dot active"></div>
+      <div class="round-dot"></div>
+    </div>
+    <div class="letter-header">
+      <div class="letter-from">A message from</div>
+      <div class="letter-name">Jordan</div>
+    </div>
+    <div class="letter-card">
+      <div class="letter-accent"></div>
+      <p class="letter-body">"It seems like you felt overwhelmed and shut down — not because you didn't care, but because you didn't know how to respond without making things worse."</p>
+      <div class="letter-attribution">
+        <div class="letter-avatar">J</div>
+        <span class="letter-attribution-text">Jordan — gently reworded</span>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="btn-stack">
+      <button class="btn btn-dark" onclick="go('screen-round2-reply')">Write your reply</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 7b: ROUND 2 — REPLY ── -->
+  <div class="screen" id="screen-round2-reply">
+    <button class="back-btn" onclick="go('screen-round2')">← Back</button>
+    <div class="round-dots">
+      <div class="round-dot active"></div>
+      <div class="round-dot active"></div>
+      <div class="round-dot"></div>
+    </div>
+    <h2>Your reply to Jordan.</h2>
+    <p class="subtext" style="margin-bottom:0;">Speak honestly — we'll gently reword it before Jordan sees it.</p>
+    <div class="voice-row">
+      <button class="mic-btn" aria-label="Record your reply">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/>
+        </svg>
+      </button>
+      <span class="voice-label">Hold to speak your reply.</span>
+    </div>
+    <div class="voice-divider">or write it</div>
+    <textarea class="journal-input" style="height:120px; margin-top:0;" placeholder="Your reply..."></textarea>
+    <div class="spacer"></div>
+    <div class="btn-stack">
+      <button class="btn btn-dark" onclick="go('screen-round2-confirm')">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 7c: ROUND 2 — REWRITE CONFIRM ── -->
+  <div class="screen" id="screen-round2-confirm">
+    <button class="back-btn" onclick="go('screen-round2-reply')">← Back</button>
+    <div class="eyebrow">
+      <div class="eyebrow-dot"></div>
+      <span class="eyebrow-text">Before you send</span>
+    </div>
+    <h2 style="margin-bottom:20px;">Here's how Jordan<br>will hear it.</h2>
+    <div class="rewrite-block rewrite-original">
+      <div class="rewrite-label">What you said</div>
+      <p>"You always do this. You just check out and leave me to deal with everything on my own."</p>
+    </div>
+    <div class="rewrite-arrow">↓</div>
+    <div class="rewrite-block rewrite-new">
+      <div class="rewrite-label">What Jordan will receive</div>
+      <p>"When things get hard, I feel alone in it — and I really want us to face these moments together."</p>
+    </div>
+    <div class="spacer"></div>
+    <div class="btn-stack">
+      <button class="btn btn-rose" onclick="go('screen-round2-jordan')">Send this</button>
+      <button class="btn btn-ghost" onclick="go('screen-round2-reply')">Try again</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 7d: ROUND 2 — JORDAN'S REPLY ── -->
+  <div class="screen" id="screen-round2-jordan">
+    <div class="round-dots">
+      <div class="round-dot active"></div>
+      <div class="round-dot active"></div>
+      <div class="round-dot"></div>
+    </div>
+    <div class="letter-header">
+      <div class="letter-from">Jordan replied</div>
+      <div class="letter-name">Jordan</div>
+    </div>
+    <div class="letter-card">
+      <div class="letter-accent"></div>
+      <p class="letter-body">"I hear that you've felt alone in the hard moments. I want to be someone you can lean on — I just freeze sometimes, and I'm working on that."</p>
+      <div class="letter-attribution">
+        <div class="letter-avatar">J</div>
+        <span class="letter-attribution-text">Jordan — gently reworded</span>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="btn-stack">
+      <button class="btn btn-dark" onclick="go('screen-round3')">Continue to the last question</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 8: ROUND 3 — QUESTION + ANSWER ── -->
+  <div class="screen" id="screen-round3">
+    <button class="back-btn" onclick="go('screen-round2-jordan')">← Back</button>
+    <div class="round-dots">
+      <div class="round-dot active"></div>
+      <div class="round-dot active"></div>
+      <div class="round-dot active"></div>
+    </div>
+    <div class="letter-from" style="margin-bottom:14px;">One last question</div>
+    <p style="font-family:var(--serif); font-size:22px; font-style:italic; line-height:1.5; color:var(--charcoal); margin-bottom:4px;">What do you need from Jordan right now to feel like you can move forward together?</p>
+    <div class="voice-row">
+      <button class="mic-btn" aria-label="Record your answer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/>
+        </svg>
+      </button>
+      <span class="voice-label">Hold to speak your answer.</span>
+    </div>
+    <div class="voice-divider">or write it</div>
+    <textarea class="journal-input" style="height:110px; margin-top:0;" placeholder="Your answer..."></textarea>
+    <div class="spacer"></div>
+    <div class="btn-stack">
+      <button class="btn btn-rose" onclick="go('screen-verdict-waiting')">I'm ready for the verdict</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 9: VERDICT WAITING ── -->
+  <div class="screen" id="screen-verdict-waiting">
+    <div class="eyebrow" style="justify-content:center;">
+      <div class="eyebrow-dot"></div>
+      <span class="eyebrow-text">Be Heard</span>
+    </div>
+    <div class="breath-container">
+      <div style="position:relative; display:flex; align-items:center; justify-content:center; width:220px; height:220px;">
+        <div style="position:absolute; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle, rgba(201,135,122,0.08) 0%, transparent 70%); animation:breathe-outer 4s ease-in-out infinite;"></div>
+        <div style="position:absolute; width:160px; height:160px; border-radius:50%; background:radial-gradient(circle, rgba(201,135,122,0.12) 0%, transparent 70%); animation:breathe-mid 4s ease-in-out infinite;"></div>
+        <div style="position:absolute; width:80px; height:80px; border-radius:50%; background:rgba(201,135,122,0.2); animation:breathe-inner 4s ease-in-out infinite;"></div>
+        <div style="position:absolute; width:40px; height:40px; border-radius:50%; background:rgba(201,135,122,0.35);"></div>
+      </div>
+      <div style="text-align:center; margin-top:32px;">
+        <h2 style="margin-bottom:8px;">Getting your results<br>ready...</h2>
+        <p class="subtext" style="text-align:center; max-width:240px; margin:0 auto;">Both of you have been heard. Take a breath.</p>
+      </div>
+    </div>
+    <button class="btn btn-ghost mt-auto" onclick="go('screen-verdict')">See verdict (demo)</button>
+  </div>
+
+  <!-- ── SCREEN 10: VERDICT ── -->
+  <div class="screen screen-gradient" id="screen-verdict">
+    <button class="back-btn" onclick="go('screen-verdict-waiting')">← Back</button>
+    <div class="verdict-head">
+      <div>
+        <div class="eyebrow" style="margin-bottom:8px;">
+          <div class="eyebrow-dot"></div>
+          <span class="eyebrow-text">Your verdict</span>
+        </div>
+        <h2 style="margin-bottom:8px;">The dinner plans</h2>
+      </div>
+    </div>
+
+    <span class="pill pill-proportionate">Proportionate</span>
+    <div class="verdict-card verdict-what">
+      <div class="verdict-card-label">What happened</div>
+      <p class="verdict-card-body">Plans changed without notice and both of you felt your needs weren't considered. Underneath it was a deeper need to feel prioritised.</p>
+    </div>
+    <div class="verdict-card verdict-well">
+      <div class="verdict-card-label">What you did well</div>
+      <p class="verdict-card-body">You stayed in the conversation when it felt hopeless, and named what you felt without attacking.</p>
+    </div>
+    <div class="verdict-card verdict-diff">
+      <div class="verdict-card-label">Could have done differently</div>
+      <p class="verdict-card-body">Checking in earlier would have eased the tension. A small heads-up carries more weight than an apology after.</p>
+    </div>
+    <div class="verdict-card verdict-action">
+      <div class="verdict-card-label">One action</div>
+      <p class="verdict-card-body">Send Jordan a voice note tonight — not an explanation, just acknowledgment of how they felt.</p>
+    </div>
+
+    <div class="spacer"></div>
+    <button class="btn-text" onclick="go('screen-home')">Return home</button>
+  </div>
+
+  <!-- ── SCREEN 11: JOIN ── -->
+  <div class="screen" id="screen-join">
+    <button class="back-btn" onclick="go('screen-home')">← Back</button>
+    <div style="text-align:center; margin: 24px 0 32px;">
+      <div style="width:64px; height:64px; border-radius:50%; background:var(--rose-soft); display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+        <span style="font-size:28px;">🤝</span>
+      </div>
+      <h2>Your partner wants<br>to hear your side.</h2>
+      <p class="subtext" style="text-align:center; margin:12px auto 0; max-width:260px;">Enter the code they shared with you to begin.</p>
+    </div>
+    <input type="text" placeholder="Enter code — e.g. BH·4829"
+      style="width:100%; background:white; border:none; border-radius:16px; padding:20px; font-family:var(--sans); font-size:18px; text-align:center; letter-spacing:0.1em; color:var(--charcoal); outline:none; box-shadow:0 2px 16px rgba(44,44,42,0.06);" />
+    <div class="spacer"></div>
+    <div class="btn-stack">
+      <button class="btn btn-dark" onclick="go('screen-reflection')">Join conversation →</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: PROFILE ── -->
+  <div class="screen" id="screen-profile">
+    <button class="back-btn" onclick="go('screen-home')">← Back</button>
+    <div class="eyebrow">
+      <div class="eyebrow-dot"></div>
+      <span class="eyebrow-text">Your profile</span>
+    </div>
+    <h2 style="margin-bottom:20px;">About you</h2>
+
+    <div class="field">
+      <label class="field-label">Name<span class="req">*</span></label>
+      <input class="field-input" type="text" placeholder="Your name" value="Anup" />
+    </div>
+
+    <div class="field">
+      <label class="field-label">Date of birth<span class="req">*</span></label>
+      <input class="field-input" type="date" />
+    </div>
+
+    <div class="field">
+      <label class="field-label">Email<span class="req">*</span></label>
+      <input class="field-input" type="email" placeholder="you@email.com" />
+    </div>
+
+    <div class="field">
+      <label class="field-label">Gender</label>
+      <select class="field-input">
+        <option value="">Prefer not to say</option>
+        <option>Woman</option>
+        <option>Man</option>
+        <option>Non-binary</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Phone</label>
+      <input class="field-input" type="tel" placeholder="Optional" />
+    </div>
+
+    <div class="profile-link-row" onclick="go('screen-history')">
+      <div>
+        <div class="profile-link-label">Past conversations</div>
+        <div class="profile-link-sub">3 conversations</div>
+      </div>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--charcoal-40)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+
+    <div class="spacer" style="min-height:16px;"></div>
+    <div class="btn-stack">
+      <button class="btn btn-dark" onclick="go('screen-home')">Save profile</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 12: HISTORY ── -->
+  <div class="screen" id="screen-history">
+    <button class="back-btn" onclick="go('screen-home')">← Back</button>
+    <div class="eyebrow">
+      <div class="eyebrow-dot"></div>
+      <span class="eyebrow-text">Past conversations</span>
+    </div>
+    <h2 style="margin-bottom:24px;">Your history</h2>
+
+    <div class="history-item" onclick="go('screen-verdict')">
+      <div>
+        <div class="history-date">June 10, 2026</div>
+        <div class="history-title">The dinner plans</div>
+        <div style="font-size:13px; color:var(--charcoal-40); margin-top:4px;">Both felt unheard about priorities</div>
+      </div>
+      <div class="history-status"></div>
+    </div>
+
+    <div class="history-item">
+      <div>
+        <div class="history-date">May 28, 2026</div>
+        <div class="history-title">The work weekend</div>
+        <div style="font-size:13px; color:var(--charcoal-40); margin-top:4px;">About feeling deprioritised</div>
+      </div>
+      <div class="history-status"></div>
+    </div>
+
+    <div class="history-item">
+      <div>
+        <div class="history-date">May 14, 2026</div>
+        <div class="history-title">The phone conversation</div>
+        <div style="font-size:13px; color:var(--charcoal-40); margin-top:4px;">About tone and dismissiveness</div>
+      </div>
+      <div class="history-status" style="background:var(--amber);"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function go(id) {
+    const current = document.querySelector('.screen.active');
+    const next = document.getElementById(id);
+    if (!next || current === next) return;
+    current.classList.add('exit');
+    setTimeout(() => {
+      current.classList.remove('active', 'exit');
+      next.classList.add('active');
+      next.scrollTop = 0;
+    }, 300);
+  }
+
+  function switchVerdict(){}
+</script>
+</body>
+</html>

@@ -158,11 +158,11 @@ export function MicButton({ onTranscribed, size = "small" }: Props) {
 const styles = StyleSheet.create({
   wrap: { alignItems: "center", gap: 6 },
   btn: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.rose,
     alignItems: "center",
     justifyContent: "center",
   },
-  btnRecording: { backgroundColor: theme.colors.danger },
+  btnRecording: { backgroundColor: theme.colors.charcoal },
   label: { fontSize: 12, color: theme.colors.textSubtle },
   error: { fontSize: 12, color: theme.colors.danger, textAlign: "center", maxWidth: 220 },
   settingsLink: {

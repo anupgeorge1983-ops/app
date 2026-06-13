@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -13,12 +14,35 @@ import { Feather } from "@expo/vector-icons";
 import { theme } from "@/src/theme";
 import { api } from "@/src/api";
 import { getOrCreateUserId, isOnboarded } from "@/src/session";
+import { Eyebrow, BtnDark, BtnGhost, BtnText } from "@/src/components/ui";
 
 export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [totalResolved, setTotalResolved] = useState<number | null>(null);
 
+  // ── Orb animation ────────────────────────────────────────────────────────
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(progress, { toValue: 1, duration: 6000, useNativeDriver: true }),
+        Animated.timing(progress, { toValue: 0, duration: 6000, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [progress]);
+
+  const translateA = progress.interpolate({ inputRange: [0, 1], outputRange: [-46, 14] });
+  const scaleA    = progress.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.04] });
+  const opacityA  = progress.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0.9] });
+  const translateB = progress.interpolate({ inputRange: [0, 1], outputRange: [46, -14] });
+  const scaleB    = progress.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.04] });
+  const opacityB  = progress.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0.85] });
+
+  // ── Data loading (unchanged) ──────────────────────────────────────────────
   const load = useCallback(async () => {
     const done = await isOnboarded();
     if (!done) {
@@ -35,22 +59,15 @@ export default function Home() {
     setLoading(false);
   }, [router]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const startNewCase = () => router.push("/case/new");
-
+  // ── Loading state ─────────────────────────────────────────────────────────
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <ActivityIndicator color={theme.colors.primary} style={{ marginTop: 80 }} />
+        <ActivityIndicator color={theme.colors.rose} style={{ marginTop: 80 }} />
       </SafeAreaView>
     );
   }
@@ -64,115 +81,190 @@ export default function Home() {
           ? "1 couple has found their way back."
           : `${totalResolved.toLocaleString()} couples have found their way back.`;
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      {/* Top bar — profile icon only */}
+      {/* Ambient corner blobs */}
+      <View style={styles.blobTR} pointerEvents="none" />
+      <View style={styles.blobBL} pointerEvents="none" />
+
+      {/* Profile icon — top right */}
       <View style={styles.topBar}>
-        <View style={{ width: 40 }} />
         <TouchableOpacity
           testID="profile-icon-button"
           onPress={() => router.push("/profile")}
           style={styles.profileBtn}
           activeOpacity={0.7}
         >
-          <Feather name="user" size={22} color={theme.colors.textHeading} />
+          <Feather name="user" size={20} color={theme.colors.charcoal} />
         </TouchableOpacity>
       </View>
 
-      {/* Centered minimal content */}
       <View style={styles.content}>
+        {/* Hero block */}
         <View style={styles.heroBlock}>
-          <Text
-            style={styles.brand}
-            testID="brand-title"
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-          >
-            Be Heard
+          <Eyebrow label="Be Heard" />
+
+          <Text style={styles.h1} testID="brand-title">
+            {"A quiet space\nto find your\n"}
+            <Text style={styles.h1Em}>way back.</Text>
           </Text>
-          <Text style={styles.tagline} testID="tagline">
-            A calm bridge back to each other
+
+          <Text style={styles.subtext} testID="tagline">
+            When the argument is over but the distance remains — this is where you begin.
           </Text>
+
+          {motivational && (
+            <Text testID="motivational-stats" style={styles.motivational}>
+              {motivational}
+            </Text>
+          )}
         </View>
 
-        <TouchableOpacity
-          testID="start-case-button"
-          onPress={startNewCase}
-          style={styles.startBtn}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.startBtnText}>Start a case</Text>
-          <Feather name="arrow-right" size={20} color="#fff" />
-        </TouchableOpacity>
+        {/* Drifting orbs */}
+        <View style={styles.orbStage}>
+          <Animated.View
+            style={[
+              styles.orbA,
+              { transform: [{ translateX: translateA }, { scale: scaleA }], opacity: opacityA },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.orbB,
+              { transform: [{ translateX: translateB }, { scale: scaleB }], opacity: opacityB },
+            ]}
+          />
+        </View>
 
-        {motivational && (
-          <Text testID="motivational-stats" style={styles.motivational}>
-            {motivational}
-          </Text>
-        )}
+        {/* Button stack */}
+        <View style={styles.btnStack}>
+          <BtnDark
+            testID="start-case-button"
+            label="Start a conversation"
+            onPress={() => router.push("/case/new")}
+          />
+          <BtnGhost
+            label="Join a conversation"
+            onPress={() => {}}
+          />
+          <BtnText
+            label="View past conversations"
+            onPress={() => router.push("/cases")}
+          />
+        </View>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: theme.colors.background },
+  safe: {
+    flex: 1,
+    backgroundColor: theme.colors.cream,
+  },
+
+  // Ambient background blobs
+  blobTR: {
+    position: "absolute",
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    top: -80,
+    right: -80,
+    backgroundColor: "rgba(245,232,228,0.55)",
+  },
+  blobBL: {
+    position: "absolute",
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    bottom: -60,
+    left: -60,
+    backgroundColor: "rgba(243,236,220,0.5)",
+  },
+
+  // Profile icon
   topBar: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.sm,
   },
   profileBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.charcoal18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.offWhite,
+    ...theme.shadow.card,
   },
+
+  // Main content column
   content: {
     flex: 1,
-    paddingHorizontal: theme.spacing.lg,
-    justifyContent: "center",
-    paddingBottom: theme.spacing.xxl,
+    paddingHorizontal: 28,
+    paddingBottom: 36,
   },
+
+  // Hero text
   heroBlock: {
-    alignItems: "flex-start",
-    marginBottom: theme.spacing.xxl,
+    marginTop: 20,
+    marginBottom: 4,
   },
-  brand: {
-    fontSize: 52,
-    fontWeight: "800",
-    color: theme.colors.textHeading,
-    letterSpacing: -1.6,
-    lineHeight: 56,
+  h1: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 34,
+    lineHeight: 42,
+    color: theme.colors.charcoal,
+    marginBottom: 16,
   },
-  tagline: {
-    marginTop: theme.spacing.md,
-    fontSize: 17,
-    color: theme.colors.textSubtle,
-    lineHeight: 24,
+  h1Em: {
+    fontFamily: theme.fonts.serifMediumItalic,
+    color: theme.colors.rose,
   },
-  startBtn: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.button,
-    paddingVertical: 18,
-    paddingHorizontal: theme.spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  subtext: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 16,
+    lineHeight: 28,
+    color: theme.colors.charcoal55,
+    maxWidth: 300,
   },
-  startBtnText: { color: "#fff", fontSize: 17, fontWeight: "600" },
   motivational: {
-    marginTop: theme.spacing.md,
-    fontSize: 13,
-    color: theme.colors.textSubtle,
-    textAlign: "center",
-    fontWeight: "400",
+    marginTop: 12,
+    fontFamily: theme.fonts.sans,
+    fontSize: 12,
+    color: theme.colors.charcoal40,
+    letterSpacing: 0.2,
+  },
+
+  // Orb stage
+  orbStage: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 120,
+  },
+  orbA: {
+    position: "absolute",
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: theme.colors.rose,
+  },
+  orbB: {
+    position: "absolute",
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: theme.colors.amber,
+  },
+
+  // Buttons
+  btnStack: {
+    gap: 10,
   },
 });
