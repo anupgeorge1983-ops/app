@@ -261,7 +261,7 @@ export default function CaseFlow() {
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         {/* Top bar — always visible */}
         <View style={styles.topBar}>
@@ -299,6 +299,7 @@ export default function CaseFlow() {
             contentContainerStyle={styles.scroll}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
           >
             {isInputStage(stage) && (
               <InputBlock

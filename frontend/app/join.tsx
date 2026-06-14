@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import { theme } from "@/src/theme";
-import { api } from "@/src/api";
+import { api, Case } from "@/src/api";
 import { Eyebrow } from "@/src/components/ui";
 
 // Option A: the "code" Partner B enters is the full case UUID, sent by Partner A
@@ -26,13 +26,17 @@ import { Eyebrow } from "@/src/components/ui";
 // The join screen UI, validation logic, and routing all stay identical — only the
 // single API call changes.
 
+type Step = "enter" | "confirm";
+
 export default function JoinScreen() {
   const router = useRouter();
+  const [step, setStep] = useState<Step>("enter");
   const [code, setCode] = useState("");
+  const [confirmedCase, setConfirmedCase] = useState<Case | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const onJoin = async () => {
+  const onLookup = async () => {
     const trimmed = code.trim();
     if (!trimmed) {
       setError("Please enter the case ID your partner shared with you.");
@@ -46,15 +50,16 @@ export default function JoinScreen() {
       // Option A: full UUID lookup. Swap for getCaseByCode(trimmed) in Option B.
       const caseData = await api.getCase(trimmed);
 
-      // Case is fully resolved — send to verdict
       if (caseData.stage === "verdict_ready") {
+        // Conversation is fully resolved — go straight to verdict
         router.replace(`/verdict/${caseData.id}`);
         return;
       }
 
-      // It's Partner B's turn — enter the case flow
       if (caseData.stage.startsWith("b_")) {
-        router.replace(`/case/${caseData.id}`);
+        // It's Partner B's turn — show the context confirmation step
+        setConfirmedCase(caseData);
+        setStep("confirm");
         return;
       }
 
@@ -75,18 +80,70 @@ export default function JoinScreen() {
     }
   };
 
+  // ── Confirm step ───────────────────────────────────────────────────────────
+  // Shows the conflict title and Partner A's name — nothing from A's submissions.
+  if (step === "confirm" && confirmedCase) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Back resets to the entry step — no navigation, no re-fetch */}
+          <TouchableOpacity
+            testID="join-confirm-back-button"
+            onPress={() => {
+              setStep("enter");
+              setConfirmedCase(null);
+            }}
+            style={styles.backBtn}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.backBtnText}>← Back</Text>
+          </TouchableOpacity>
+
+          <Eyebrow label="Be Heard" />
+
+          {/* Context card — title only, zero of A's content */}
+          <View style={styles.contextCard}>
+            <Text style={styles.contextCardLabel}>You're joining</Text>
+            <Text style={styles.contextCardTitle}>{confirmedCase.title}</Text>
+          </View>
+
+          {/* Neutral orienting lines — A's name only, no A's framing */}
+          <Text style={styles.orientPrimary}>
+            {confirmedCase.partner_a_name} wants to work through this together.
+          </Text>
+          <Text style={styles.orientSub}>
+            {confirmedCase.partner_b_name}, share your side first —
+            you'll see their perspective after.
+          </Text>
+
+          <TouchableOpacity
+            testID="join-start-button"
+            onPress={() => router.replace(`/case/${confirmedCase.id}`)}
+            activeOpacity={0.85}
+            style={styles.btnDark}
+          >
+            <Text style={styles.btnDarkText}>Start my side →</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Entry step ─────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Back */}
           <TouchableOpacity
             testID="join-back-button"
             onPress={() => router.back()}
@@ -105,7 +162,6 @@ export default function JoinScreen() {
             Enter the case ID they shared with you to begin.
           </Text>
 
-          {/* Code / ID input */}
           <TextInput
             testID="join-code-input"
             value={code}
@@ -120,7 +176,7 @@ export default function JoinScreen() {
             autoCorrect={false}
             spellCheck={false}
             returnKeyType="go"
-            onSubmitEditing={onJoin}
+            onSubmitEditing={onLookup}
           />
 
           {error && (
@@ -131,7 +187,7 @@ export default function JoinScreen() {
 
           <TouchableOpacity
             testID="join-submit-button"
-            onPress={onJoin}
+            onPress={onLookup}
             disabled={loading || code.trim().length === 0}
             activeOpacity={0.85}
             style={[
@@ -175,6 +231,7 @@ const styles = StyleSheet.create({
     color: theme.colors.charcoal40,
   },
 
+  // ── Entry step ──────────────────────────────────────────────────────────────
   h2: {
     fontFamily: theme.fonts.serifMedium,
     fontSize: 26,
@@ -189,8 +246,6 @@ const styles = StyleSheet.create({
     color: theme.colors.charcoal55,
     marginBottom: 28,
   },
-
-  // Large centred input — paste-friendly for long UUIDs
   input: {
     backgroundColor: theme.colors.offWhite,
     borderRadius: theme.radius.input,
@@ -205,7 +260,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     ...theme.shadow.card,
   },
-
   error: {
     fontFamily: theme.fonts.sans,
     color: theme.colors.rose,
@@ -214,22 +268,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     lineHeight: 22,
   },
-
-  btnDark: {
-    backgroundColor: theme.colors.charcoal,
-    borderRadius: theme.radius.button,
-    paddingVertical: 18,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  btnDarkText: {
-    fontFamily: theme.fonts.sansMedium,
-    color: "#F7F3EE",
-    fontSize: 16,
-    letterSpacing: 0.2,
-  },
-  btnDisabled: { opacity: 0.4 },
-
   helpNote: {
     fontFamily: theme.fonts.sans,
     fontSize: 13,
@@ -238,4 +276,57 @@ const styles = StyleSheet.create({
     marginTop: 20,
     lineHeight: 20,
   },
+
+  // ── Confirm step ────────────────────────────────────────────────────────────
+  contextCard: {
+    backgroundColor: theme.colors.offWhite,
+    borderRadius: theme.radius.card,
+    padding: 24,
+    marginBottom: 24,
+    ...theme.shadow.card,
+  },
+  contextCardLabel: {
+    fontFamily: theme.fonts.sansMedium,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
+    color: theme.colors.charcoal40,
+    marginBottom: 10,
+  },
+  contextCardTitle: {
+    fontFamily: theme.fonts.serifMediumItalic,
+    fontSize: 24,
+    lineHeight: 32,
+    color: theme.colors.charcoal,
+  },
+  orientPrimary: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 16,
+    lineHeight: 26,
+    color: theme.colors.charcoal,
+    marginBottom: 8,
+  },
+  orientSub: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 15,
+    lineHeight: 24,
+    color: theme.colors.charcoal55,
+    marginBottom: 4,
+  },
+
+  // ── Shared buttons ──────────────────────────────────────────────────────────
+  btnDark: {
+    backgroundColor: theme.colors.charcoal,
+    borderRadius: theme.radius.button,
+    paddingVertical: 18,
+    alignItems: "center",
+    marginTop: 28,
+  },
+  btnDarkText: {
+    fontFamily: theme.fonts.sansMedium,
+    color: "#F7F3EE",
+    fontSize: 16,
+    letterSpacing: 0.2,
+  },
+  btnDisabled: { opacity: 0.4 },
 });
