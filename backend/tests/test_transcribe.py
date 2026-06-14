@@ -1,4 +1,4 @@
-"""Tests for the new POST /api/transcribe endpoint (Whisper via emergentintegrations)."""
+"""Tests for the POST /api/transcribe endpoint (Gemini audio transcription)."""
 import io
 import os
 import requests

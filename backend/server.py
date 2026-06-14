@@ -8,13 +8,13 @@ import json
 import logging
 import uuid
 import re
+import base64
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
-from emergentintegrations.llm.openai.speech_to_text import OpenAISpeechToText
+import google.generativeai as genai
 
 
 ROOT_DIR = Path(__file__).parent
@@ -22,9 +22,15 @@ load_dotenv(ROOT_DIR / ".env")
 
 MONGO_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ["DB_NAME"]
-EMERGENT_LLM_KEY = os.environ["EMERGENT_LLM_KEY"]
+GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 
-CLAUDE_MODEL = "claude-sonnet-4-5-20250929"
+# gemini-3.5-flash: newest stable Flash as of June 2026 (verify at ai.google.dev/gemini-api/docs/models)
+GEMINI_MODEL = "gemini-2.5-flash"
+# gemini-2.5-flash is used for transcription: confirmed audio-input support.
+# Update to GEMINI_MODEL once gemini-3.5-flash audio support is verified.
+GEMINI_TRANSCRIPTION_MODEL = "gemini-2.5-flash"
+
+genai.configure(api_key=GEMINI_API_KEY)
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
@@ -143,21 +149,19 @@ STAGES = [
 
 def _strip_json_fence(text: str) -> str:
     text = text.strip()
-    # Try to find first { and last }
     m = re.search(r"\{[\s\S]*\}", text)
     if m:
         return m.group(0)
     return text
 
 
-async def _claude_send(system_msg: str, user_text: str, session_id: str) -> str:
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=session_id,
-        system_message=system_msg,
-    ).with_model("anthropic", CLAUDE_MODEL)
-    response = await chat.send_message(UserMessage(text=user_text))
-    return response if isinstance(response, str) else str(response)
+async def _gemini_send(system_msg: str, user_text: str, session_id: str) -> str:
+    model = genai.GenerativeModel(
+        model_name=GEMINI_MODEL,
+        system_instruction=system_msg,
+    )
+    response = await model.generate_content_async(user_text)
+    return response.text
 
 
 async def generate_mirror(speaker_name: str, partner_name: str, raw_text: str, case_id: str, adjustment_note: str = "") -> str:
@@ -176,7 +180,7 @@ async def generate_mirror(speaker_name: str, partner_name: str, raw_text: str, c
         "Reflect back what they meant in 2-3 calm, neutral sentences. Output only the mirror text."
     )
     try:
-        out = await _claude_send(system_msg, user_text, f"mirror-{case_id}-{uuid.uuid4()}")
+        out = await _gemini_send(system_msg, user_text, f"mirror-{case_id}-{uuid.uuid4()}")
         return out.strip().strip('"')
     except Exception:
         logger.exception("mirror generation failed")
@@ -223,7 +227,7 @@ async def generate_round_questions(
             "from their partner to feel like they can move forward together."
         )
     try:
-        out = await _claude_send(system_msg, user_text, f"q-{case_id}-r{round_num}")
+        out = await _gemini_send(system_msg, user_text, f"q-{case_id}-r{round_num}")
         data = json.loads(_strip_json_fence(out))
         return {
             "a": str(data.get("question_for_a", "")).strip(),
@@ -266,7 +270,7 @@ async def generate_verdict(case_id: str, transcript: str, a_name: str, b_name: s
         "Keep each text field under 280 characters. pill is either \"Proportionate\" or \"Heightened\"."
     )
     try:
-        out = await _claude_send(system_msg, user_text2, f"verdict-{case_id}")
+        out = await _gemini_send(system_msg, user_text2, f"verdict-{case_id}")
         data = json.loads(_strip_json_fence(out))
         summary = str(data.get("summary", "")).strip()
         pa = data.get("partner_a", {}) or {}
@@ -564,13 +568,15 @@ async def get_stats(user_id: str):
 
 # ------------------------- Transcription -------------------------
 
-_stt_client: Optional[OpenAISpeechToText] = None
-
-def _get_stt() -> OpenAISpeechToText:
-    global _stt_client
-    if _stt_client is None:
-        _stt_client = OpenAISpeechToText(api_key=EMERGENT_LLM_KEY)
-    return _stt_client
+_AUDIO_MIME = {
+    "m4a": "audio/mp4",
+    "mp3": "audio/mpeg",
+    "mp4": "audio/mp4",
+    "mpeg": "audio/mpeg",
+    "mpga": "audio/mpeg",
+    "wav": "audio/wav",
+    "webm": "audio/webm",
+}
 
 
 class TranscribeResponse(BaseModel):
@@ -587,23 +593,21 @@ async def transcribe(file: UploadFile = File(...)):
 
     name = file.filename or "audio.m4a"
     ext = name.rsplit(".", 1)[-1].lower() if "." in name else "m4a"
-    if ext not in ("m4a", "mp3", "mp4", "mpeg", "mpga", "wav", "webm"):
+    if ext not in _AUDIO_MIME:
         ext = "m4a"
-        name = "audio.m4a"
 
-    bio = io.BytesIO(raw)
-    bio.name = name  # litellm uses .name to detect format
+    mime_type = _AUDIO_MIME[ext]
 
     try:
-        stt = _get_stt()
-        response = await stt.transcribe(file=bio, model="whisper-1", response_format="json")
-        text = ""
-        if hasattr(response, "text"):
-            text = response.text or ""
-        elif isinstance(response, dict):
-            text = response.get("text", "")
-        else:
-            text = str(response)
+        model = genai.GenerativeModel(GEMINI_TRANSCRIPTION_MODEL)
+        audio_part = genai.protos.Part(
+            inline_data=genai.protos.Blob(mime_type=mime_type, data=raw)
+        )
+        response = await model.generate_content_async([
+            audio_part,
+            "Transcribe this audio accurately. Return only the spoken words, nothing else.",
+        ])
+        text = response.text or ""
         return TranscribeResponse(text=text.strip())
     except Exception as e:
         logger.exception("transcription failed")
