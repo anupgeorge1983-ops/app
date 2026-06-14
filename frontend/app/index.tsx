@@ -146,7 +146,7 @@ export default function Home() {
           />
           <BtnGhost
             label="Join a conversation"
-            onPress={() => {}}
+            onPress={() => router.push("/join")}
           />
           <BtnText
             label="View past conversations"
