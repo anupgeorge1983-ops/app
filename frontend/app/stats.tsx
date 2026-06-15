@@ -183,6 +183,9 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.cream },
 
   header: {
+    maxWidth: 620,
+    width: "100%",
+    alignSelf: "center",
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 4,
@@ -202,6 +205,9 @@ const styles = StyleSheet.create({
   },
 
   scroll: {
+    maxWidth: 620,
+    width: "100%",
+    alignSelf: "center",
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 48,

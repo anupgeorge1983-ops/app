@@ -215,6 +215,9 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.cream },
 
   container: {
+    maxWidth: 620,
+    width: "100%",
+    alignSelf: "center",
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 48,

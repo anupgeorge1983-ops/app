@@ -1,48 +1,80 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Animated,
+  ScrollView,
+  useWindowDimensions,
+  type ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { theme } from "@/src/theme";
 import { api } from "@/src/api";
 import { getOrCreateUserId, isOnboarded } from "@/src/session";
-import { Eyebrow, BtnDark, BtnGhost, BtnText } from "@/src/components/ui";
+import { BtnDark, BtnGhost, BtnText } from "@/src/components/ui";
+
+const TEXT_MAX  = 620;  // hero copy, headings, closing CTA
+const CARDS_MAX = 960;  // step-card row and nav so 3-col has room
+
+function CenteredView({
+  children,
+  maxWidth = TEXT_MAX,
+  style,
+}: {
+  children: React.ReactNode;
+  maxWidth?: number;
+  style?: ViewStyle;
+}) {
+  return (
+    <View style={[styles.centered, { maxWidth }, style]}>
+      {children}
+    </View>
+  );
+}
+
+function StepCard({
+  step,
+  title,
+  body,
+  style,
+}: {
+  step: string;
+  title: string;
+  body: string;
+  style?: ViewStyle;
+}) {
+  return (
+    <View style={[styles.stepCard, style]}>
+      <Text style={styles.stepLabel}>{step}</Text>
+      <Text style={styles.stepTitle}>{title}</Text>
+      <Text style={styles.stepBody}>{body}</Text>
+    </View>
+  );
+}
+
+function FeatureCard({ title, body }: { title: string; body: string }) {
+  return (
+    <View style={styles.featureCard}>
+      <Text style={styles.featureTitle}>{title}</Text>
+      <Text style={styles.featureBody}>{body}</Text>
+    </View>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 640;
+
   const [loading, setLoading] = useState(true);
   const [totalResolved, setTotalResolved] = useState<number | null>(null);
 
-  // ── Orb animation ────────────────────────────────────────────────────────
-  const progress = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(progress, { toValue: 1, duration: 6000, useNativeDriver: true }),
-        Animated.timing(progress, { toValue: 0, duration: 6000, useNativeDriver: true }),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [progress]);
-
-  const translateA = progress.interpolate({ inputRange: [0, 1], outputRange: [-46, 14] });
-  const scaleA    = progress.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.04] });
-  const opacityA  = progress.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0.9] });
-  const translateB = progress.interpolate({ inputRange: [0, 1], outputRange: [46, -14] });
-  const scaleB    = progress.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.04] });
-  const opacityB  = progress.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0.85] });
-
-  // ── Data loading (unchanged) ──────────────────────────────────────────────
   const load = useCallback(async () => {
     const done = await isOnboarded();
     if (!done) {
@@ -60,10 +92,8 @@ export default function Home() {
   }, [router]);
 
   useEffect(() => { load(); }, [load]);
-
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  // ── Loading state ─────────────────────────────────────────────────────────
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -81,37 +111,59 @@ export default function Home() {
           ? "1 couple has found their way back."
           : `${totalResolved.toLocaleString()} couples have found their way back.`;
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const handleStart = () => router.push("/case/new");
+  const handleJoin  = () => router.push("/join");
+
+  // Step card style: flex:1 so all three share equal width in the row
+  const stepCardWide: ViewStyle = { flex: 1, marginBottom: 0 };
+
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      {/* Ambient corner blobs */}
-      <View style={styles.blobTR} pointerEvents="none" />
-      <View style={styles.blobBL} pointerEvents="none" />
+      <LinearGradient
+        colors={["#EDCFC8", "#F5EDE8", "#F9F7F4"]}
+        locations={[0, 0.35, 1]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 0.65 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
 
-      {/* Profile icon — top right */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          testID="profile-icon-button"
-          onPress={() => router.push("/profile")}
-          style={styles.profileBtn}
-          activeOpacity={0.7}
-        >
-          <Feather name="user" size={20} color={theme.colors.charcoal} />
-        </TouchableOpacity>
-      </View>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
 
-      <View style={styles.content}>
-        {/* Hero block */}
-        <View style={styles.heroBlock}>
-          <Eyebrow label="Be Heard" />
+        {/* ── NAV BAR ── */}
+        <CenteredView maxWidth={CARDS_MAX} style={styles.navBar}>
+          <Text style={styles.navBrand}>Be Heard</Text>
+          <View style={styles.navRight}>
+            <Text style={styles.navTagline}>A CALM BRIDGE BACK</Text>
+            <TouchableOpacity
+              testID="profile-icon-button"
+              onPress={() => router.push("/profile")}
+              style={styles.profileBtn}
+              activeOpacity={0.7}
+            >
+              <Feather name="user" size={18} color={theme.colors.charcoal} />
+            </TouchableOpacity>
+          </View>
+        </CenteredView>
+
+        {/* ── HERO ── */}
+        <CenteredView maxWidth={TEXT_MAX} style={styles.heroSection}>
+          <Text style={styles.heroEyebrow}>FOR COUPLES, AFTER A FIGHT</Text>
 
           <Text style={styles.h1} testID="brand-title">
-            {"A quiet space\nto find your\n"}
-            <Text style={styles.h1Em}>way back.</Text>
+            {"A quiet space to find "}
+            <Text style={styles.h1Em}>{"your way back"}</Text>
+            {"."}
           </Text>
 
           <Text style={styles.subtext} testID="tagline">
-            When the argument is over but the distance remains — this is where you begin.
+            Both of you share what happened, in your own words. Be Heard
+            listens, reflects, and helps you talk through it — gently, and on
+            your own time.
           </Text>
 
           {motivational && (
@@ -119,41 +171,112 @@ export default function Home() {
               {motivational}
             </Text>
           )}
+
+          <View style={styles.btnStack}>
+            <BtnDark
+              testID="start-case-button"
+              label="Start a conversation"
+              onPress={handleStart}
+            />
+            <BtnGhost label="Join a conversation" onPress={handleJoin} />
+          </View>
+
+          <Text style={styles.privateNote}>
+            Private. No account needed to begin.
+          </Text>
+        </CenteredView>
+
+        {/* ── HOW IT WORKS ── */}
+        {/* Heading/subtitle stay narrow; card row stretches to CARDS_MAX */}
+        <View style={styles.sectionWrap}>
+          <CenteredView maxWidth={TEXT_MAX}>
+            <Text style={styles.sectionTitle}>How it works</Text>
+            <Text style={styles.sectionSub}>
+              Three gentle steps. No rush, no scoring, no winners.
+            </Text>
+          </CenteredView>
+
+          <CenteredView maxWidth={CARDS_MAX}>
+            <View
+              style={[
+                styles.stepRow,
+                isWide ? styles.stepRowWide : styles.stepRowNarrow,
+              ]}
+            >
+              <StepCard
+                step="STEP ONE"
+                title="Share your side, privately"
+                body="Each of you writes what happened on your own device. Your partner doesn't see your words."
+                style={isWide ? stepCardWide : undefined}
+              />
+              <StepCard
+                step="STEP TWO"
+                title="Hear what you each really meant"
+                body="Be Heard reflects back the feeling underneath the words, in neutral, kind language."
+                style={isWide ? stepCardWide : undefined}
+              />
+              <StepCard
+                step="STEP THREE"
+                title="Three rounds, then a takeaway"
+                body="You work through it in three quiet exchanges. At the end, each of you gets your own honest takeaway."
+                style={isWide ? stepCardWide : undefined}
+              />
+            </View>
+          </CenteredView>
         </View>
 
-        {/* Drifting orbs */}
-        <View style={styles.orbStage}>
-          <Animated.View
-            style={[
-              styles.orbA,
-              { transform: [{ translateX: translateA }, { scale: scaleA }], opacity: opacityA },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.orbB,
-              { transform: [{ translateX: translateB }, { scale: scaleB }], opacity: opacityB },
-            ]}
-          />
+        {/* ── REASSURANCE ── */}
+        <View style={styles.sectionWrap}>
+          <CenteredView maxWidth={TEXT_MAX}>
+            <Text style={styles.reassureTitle}>
+              {"It's just a place to be heard — "}
+              <Text style={styles.reassureTitleEm}>{"by each other."}</Text>
+            </Text>
+          </CenteredView>
+
+          <CenteredView maxWidth={isWide ? 740 : TEXT_MAX}>
+            <View style={styles.featureRow}>
+              <FeatureCard
+                title="Private"
+                body="Your words stay between the two of you. No feeds, no audience."
+              />
+              <FeatureCard
+                title="Not therapy"
+                body="We're not a clinician. We're a calm room while you talk."
+              />
+            </View>
+            <View style={styles.featureRow}>
+              <FeatureCard
+                title="No sides"
+                body="Be Heard isn't here to decide who was right."
+              />
+              <FeatureCard
+                title="A bridge back"
+                body="Just a way to get back to each other after a hard moment."
+              />
+            </View>
+          </CenteredView>
         </View>
 
-        {/* Button stack */}
-        <View style={styles.btnStack}>
-          <BtnDark
-            testID="start-case-button"
-            label="Start a conversation"
-            onPress={() => router.push("/case/new")}
-          />
-          <BtnGhost
-            label="Join a conversation"
-            onPress={() => router.push("/join")}
-          />
+        {/* ── CLOSING CTA ── */}
+        <CenteredView maxWidth={TEXT_MAX} style={styles.closingWrap}>
+          <Text style={styles.closingTitle}>When you're ready, we're here.</Text>
+          <Text style={styles.closingSub}>
+            Begin together, or send a quiet invitation to your partner.
+          </Text>
+
+          <View style={styles.btnStack}>
+            <BtnDark label="Start a conversation" onPress={handleStart} />
+            <BtnGhost label="Join a conversation" onPress={handleJoin} />
+          </View>
+
           <BtnText
             label="View past conversations"
             onPress={() => router.push("/cases")}
           />
-        </View>
-      </View>
+        </CenteredView>
+
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -163,38 +286,49 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.cream,
   },
-
-  // Ambient background blobs
-  blobTR: {
-    position: "absolute",
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    top: -80,
-    right: -80,
-    backgroundColor: "rgba(245,232,228,0.55)",
+  scroll: {
+    flex: 1,
   },
-  blobBL: {
-    position: "absolute",
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    bottom: -60,
-    left: -60,
-    backgroundColor: "rgba(243,236,220,0.5)",
+  scrollContent: {
+    paddingBottom: 80,
   },
 
-  // Profile icon
-  topBar: {
+  // Base centering container — maxWidth injected per-section
+  centered: {
+    width: "100%",
+    alignSelf: "center",
+    paddingHorizontal: 28,
+  },
+
+  // ── Nav bar ──────────────────────────────────────────────────────────────
+  navBar: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.sm,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  navBrand: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 18,
+    color: theme.colors.charcoal,
+    letterSpacing: 0.2,
+  },
+  navRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  navTagline: {
+    fontFamily: theme.fonts.sansMedium,
+    fontSize: 10,
+    letterSpacing: 1.8,
+    color: theme.colors.charcoal40,
   },
   profileBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: theme.colors.charcoal18,
     alignItems: "center",
@@ -203,24 +337,26 @@ const styles = StyleSheet.create({
     ...theme.shadow.card,
   },
 
-  // Main content column
-  content: {
-    flex: 1,
-    paddingHorizontal: 28,
-    paddingBottom: 36,
+  // ── Hero ─────────────────────────────────────────────────────────────────
+  heroSection: {
+    paddingTop: 64,
+    paddingBottom: 96,
   },
-
-  // Hero text
-  heroBlock: {
-    marginTop: 20,
-    marginBottom: 4,
+  heroEyebrow: {
+    fontFamily: theme.fonts.sansMedium,
+    fontSize: 11,
+    letterSpacing: 2.5,
+    color: theme.colors.charcoal40,
+    textAlign: "center",
+    marginBottom: 32,
   },
   h1: {
     fontFamily: theme.fonts.serifMedium,
-    fontSize: 34,
-    lineHeight: 42,
+    fontSize: 40,
+    lineHeight: 52,
     color: theme.colors.charcoal,
-    marginBottom: 16,
+    textAlign: "center",
+    marginBottom: 32,
   },
   h1Em: {
     fontFamily: theme.fonts.serifMediumItalic,
@@ -228,43 +364,154 @@ const styles = StyleSheet.create({
   },
   subtext: {
     fontFamily: theme.fonts.sans,
-    fontSize: 16,
-    lineHeight: 28,
+    fontSize: 17,
+    lineHeight: 30,
     color: theme.colors.charcoal55,
-    maxWidth: 300,
+    textAlign: "center",
+    marginBottom: 8,
   },
   motivational: {
-    marginTop: 12,
     fontFamily: theme.fonts.sans,
     fontSize: 12,
     color: theme.colors.charcoal40,
+    textAlign: "center",
     letterSpacing: 0.2,
+    marginTop: 8,
   },
-
-  // Orb stage
-  orbStage: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 120,
-  },
-  orbA: {
-    position: "absolute",
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: theme.colors.rose,
-  },
-  orbB: {
-    position: "absolute",
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: theme.colors.amber,
-  },
-
-  // Buttons
   btnStack: {
+    gap: 12,
+    marginTop: 44,
+  },
+  privateNote: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 13,
+    color: theme.colors.charcoal40,
+    textAlign: "center",
+    marginTop: 22,
+    letterSpacing: 0.1,
+  },
+
+  // ── Section shared ────────────────────────────────────────────────────────
+  sectionWrap: {
+    paddingTop: 80,
+    paddingBottom: 80,
+  },
+  sectionTitle: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 32,
+    color: theme.colors.charcoal,
+    textAlign: "center",
+    marginBottom: 14,
+  },
+  sectionSub: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 15,
+    lineHeight: 26,
+    color: theme.colors.charcoal55,
+    textAlign: "center",
+    marginBottom: 48,
+  },
+
+  // ── Step cards ────────────────────────────────────────────────────────────
+  stepRow: {
+    // direction and gap set by stepRowWide / stepRowNarrow below
+  },
+  stepRowWide: {
+    flexDirection: "row",
+    gap: 18,
+  },
+  stepRowNarrow: {
+    flexDirection: "column",
+    gap: 12,
+  },
+  stepCard: {
+    backgroundColor: theme.colors.offWhite,
+    borderWidth: 1,
+    borderColor: theme.colors.charcoal06,
+    borderRadius: theme.radius.card,
+    padding: 22,
+    marginBottom: 0, // gap handles spacing in both orientations
+    ...theme.shadow.card,
+  },
+  stepLabel: {
+    fontFamily: theme.fonts.sansMedium,
+    fontSize: 10,
+    letterSpacing: 2.5,
+    color: theme.colors.charcoal40,
+    marginBottom: 14,
+  },
+  stepTitle: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 20,
+    lineHeight: 28,
+    color: theme.colors.charcoal,
+    marginBottom: 10,
+  },
+  stepBody: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 14,
+    lineHeight: 24,
+    color: theme.colors.charcoal55,
+  },
+
+  // ── Reassurance ───────────────────────────────────────────────────────────
+  reassureTitle: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 28,
+    lineHeight: 40,
+    color: theme.colors.charcoal,
+    textAlign: "center",
+    marginBottom: 40,
+  },
+  reassureTitleEm: {
+    fontFamily: theme.fonts.serifMediumItalic,
+    color: theme.colors.rose,
+  },
+  featureRow: {
+    flexDirection: "row",
     gap: 10,
+    marginBottom: 10,
+  },
+  featureCard: {
+    flex: 1,
+    backgroundColor: theme.colors.offWhite,
+    borderWidth: 1,
+    borderColor: theme.colors.charcoal06,
+    borderRadius: theme.radius.card,
+    padding: 18,
+    ...theme.shadow.card,
+  },
+  featureTitle: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 16,
+    color: theme.colors.charcoal,
+    marginBottom: 8,
+  },
+  featureBody: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 13,
+    lineHeight: 21,
+    color: theme.colors.charcoal55,
+  },
+
+  // ── Closing CTA ───────────────────────────────────────────────────────────
+  closingWrap: {
+    paddingTop: 80,
+    paddingBottom: 80,
+  },
+  closingTitle: {
+    fontFamily: theme.fonts.serifMedium,
+    fontSize: 34,
+    lineHeight: 44,
+    color: theme.colors.charcoal,
+    textAlign: "center",
+    marginBottom: 18,
+  },
+  closingSub: {
+    fontFamily: theme.fonts.sans,
+    fontSize: 16,
+    lineHeight: 28,
+    color: theme.colors.charcoal55,
+    textAlign: "center",
   },
 });

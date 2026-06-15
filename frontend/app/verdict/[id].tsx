@@ -178,6 +178,9 @@ const styles = StyleSheet.create({
 
   // Top bar
   topBar: {
+    maxWidth: 620,
+    width: "100%",
+    alignSelf: "center",
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 4,
@@ -194,6 +197,9 @@ const styles = StyleSheet.create({
 
   // Scroll
   scroll: {
+    maxWidth: 620,
+    width: "100%",
+    alignSelf: "center",
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 52,

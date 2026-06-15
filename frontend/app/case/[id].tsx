@@ -401,6 +401,9 @@ function WaitingScreen({
 const wStyles = StyleSheet.create({
   container: {
     flex: 1,
+    maxWidth: 620,
+    width: "100%",
+    alignSelf: "center",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 28,
@@ -943,6 +946,9 @@ const mStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.cream },
   topBar: {
+    maxWidth: 620,
+    width: "100%",
+    alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -965,7 +971,14 @@ const styles = StyleSheet.create({
   },
   dotActive: { backgroundColor: theme.colors.charcoal },
   topBarSpacer: { minWidth: 60 },
-  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48 },
+  scroll: {
+    maxWidth: 620,
+    width: "100%",
+    alignSelf: "center",
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 48,
+  },
   error: {
     fontFamily: theme.fonts.sans,
     color: theme.colors.rose,
